@@ -42,20 +42,14 @@ jobs:
           DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
           DIRECT_URL: ${{ secrets.STAGING_DIRECT_URL }}
 
-      # --- Option A: Fly.io ---
-      # - uses: superfly/flyctl-actions/setup-flyctl@master
-      # - run: flyctl deploy --remote-only --config fly.staging.toml --remote-only
-      #   env:
-      #     FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+      # NOTE: users have reported RAILWAY_TOKEN auth failing with
+      # "Unauthorized" in some setups (see scaffold README) — verify this
+      # works in a dry run before relying on it, and check Railway's
+      # current docs if it doesn't.
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
 
-      # --- Option B: Railway ---
-      # - name: Deploy to Railway (staging service)
-      #   run: railway up --service=${{ secrets.RAILWAY_STAGING_SERVICE_ID }}
-      #   env:
-      #     RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-      #   # NOTE: Railway's token-auth-in-CI setup has had rough edges
-      #   # reported by users. Confirm the current working pattern against
-      #   # Railway's own docs before depending on this in production.
-
-      - name: Deploy API (uncomment your chosen provider above)
-        run: echo "Pick Fly.io or Railway above once decided"
+      - name: Deploy to Railway (staging service)
+        run: railway up --service=${{ secrets.RAILWAY_STAGING_SERVICE_ID }}
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}

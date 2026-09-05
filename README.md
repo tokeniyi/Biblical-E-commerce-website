@@ -48,18 +48,27 @@ semver ranges) rather than pinned exact versions — run `pnpm up --latest` (or
 check npm) once you actually scaffold `apps/web` with `create-next-app` and
 `apps/api` with `nest new`, rather than trusting the versions written here.
 
-Things intentionally left as decisions for you, not assumptions baked in:
+Decided:
 
-- **Fly.io vs Railway** — both deploy workflows have one path commented out;
-  pick one and delete the other. Fly.io's GitHub Actions pattern
-  (`superfly/flyctl-actions`) is well-documented and stable. Railway's
-  CI/CD token auth has had reported rough edges — confirm the current
-  working setup in Railway's own docs before depending on it.
+- **Backend hosting: Railway.** The deploy workflows call the Railway CLI
+  directly (`railway up --service=...`). **Verify this actually works in
+  a dry run before trusting it** — real users have reported
+  `RAILWAY_TOKEN` auth failing with "Unauthorized" in CI even with a
+  correctly-set secret. If it fails for you, check Railway's current docs
+  for the up-to-date working pattern before assuming the scaffold is wrong.
+- **Auth.js session strategy: JWT**, not database sessions — chosen so
+  NestJS never has to hit Neon just to check session validity, and so
+  `apps/web`/`apps/api` only share one secret (`AUTH_SECRET`) instead of
+  session DB state. See `docs/ARCHITECTURE.md` §3.1 for the full flow.
+
+Still left as decisions for you, not assumptions baked in:
+
 - **Exact Vercel CLI flags** — the `vercel deploy`/`vercel build` flags
   shown are current as of this scaffold, but Vercel's CLI has changed
   flags across majors before; double-check against Vercel's CI/CD docs
   when you wire this up for real.
-- **Repo secrets** you'll need to create: `VERCEL_TOKEN`, staging/production
+- **Repo secrets** you'll need to create: `VERCEL_TOKEN`, `AUTH_SECRET`
+  (same value in both apps, per environment), staging/production
   `DATABASE_URL` + `DIRECT_URL` (from Neon), `PAYSTACK_TEST_SECRET`,
-  `STRIPE_TEST_SECRET`, `SANITY_WEBHOOK_TEST_SECRET`, and whichever of
-  `FLY_API_TOKEN` / `RAILWAY_TOKEN` you end up using.
+  `STRIPE_TEST_SECRET`, `SANITY_WEBHOOK_TEST_SECRET`, `RAILWAY_TOKEN`,
+  `RAILWAY_STAGING_SERVICE_ID`, `RAILWAY_PRODUCTION_SERVICE_ID`.

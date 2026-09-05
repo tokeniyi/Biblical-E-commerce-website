@@ -71,28 +71,43 @@ CI, e2e = full user journey, manual = human QA before release).
 independently verify that a request is from a legitimately logged-in user,
 without sharing a process with Next.js.
 
-**Flow:**
-1. User logs in via Auth.js on `apps/web`.
-2. Auth.js issues a session (JWT or database session — confirm which mode
-   before building the NestJS guard, they verify differently).
-3. `apps/web` attaches the session token to requests to `apps/api`.
-4. `apps/api` has a guard that verifies the token independently (JWT
-   verification or a shared session store lookup) before allowing access
-   to protected routes.
+**Strategy: JWT (not database sessions).** Decided for two reasons:
+1. **Serverless compatibility** — Neon is serverless/decoupled; a
+   database-session strategy would mean NestJS hits Neon on every request
+   just to check session validity, adding latency and inflating connection
+   usage. JWT verification is local — no DB round-trip needed to check
+   auth on every request.
+2. **Clean separation** — Next.js and NestJS never share session DB state.
+   They share exactly one secret: `AUTH_SECRET`. Both sides use it to
+   sign/verify the same JWT independently.
 
-**This is the fiddliest integration point in the whole system** — it's two
-separate codebases agreeing on identity with no shared runtime. Get the
-verification mechanism agreed and documented before either side is built
-against assumptions.
+**Flow:**
+1. User logs in via Auth.js on `apps/web`, configured with
+   `strategy: "jwt"`.
+2. Auth.js signs a JWT using `AUTH_SECRET` and stores it (typically as an
+   httpOnly cookie).
+3. `apps/web` attaches the JWT to requests to `apps/api` (as a bearer
+   token or forwarded cookie, depending on how you wire the API calls).
+4. `apps/api` has a guard that verifies the JWT signature locally using
+   the same `AUTH_SECRET` — no call to Auth.js or a shared session store
+   required — and rejects anything invalid, expired, or missing before
+   the request reaches a protected route.
+
+**Setup requirement:** `AUTH_SECRET` must be identical across `apps/web`
+and `apps/api` in every environment (dev, staging, production) — set it
+once per environment and inject it as an env var/secret to both apps, not
+generated independently by each.
 
 **Tests required:**
-- **Unit:** the NestJS guard correctly accepts a validly-signed/valid
-  session and rejects an invalid, expired, or missing one — using fixture
-  tokens, not real Auth.js.
-- **Integration:** an actual token issued by Auth.js in a test environment
-  is verified successfully end-to-end by the NestJS guard.
+- **Unit:** the NestJS guard correctly accepts a validly-signed, unexpired
+  JWT and rejects an invalid signature, expired token, or missing token —
+  using fixture tokens signed with a test `AUTH_SECRET`, not real Auth.js.
+- **Integration:** a real JWT issued by Auth.js in a test environment
+  (signed with the actual shared `AUTH_SECRET` for that environment) is
+  verified successfully end-to-end by the NestJS guard.
 - **E2E / manual:** full login → protected page → protected API call
-  journey, including session expiry and logout.
+  journey, including token expiry and logout (confirm an expired/cleared
+  token is actually rejected, not just that a valid one is accepted).
 
 ---
 
@@ -269,17 +284,19 @@ See `.github/workflows/` for the actual pipeline definitions:
 |---|---|---|
 | Repo structure | Monorepo (Turborepo + pnpm workspaces) | Decided |
 | Auth provider | Auth.js | Decided |
-| Backend hosting | Railway or Fly.io | **Open — pick one before building deploy workflows for real** |
+| Auth.js session strategy | JWT (not database sessions) | Decided — see §3.1 for reasoning |
+| Backend hosting | Railway | Decided |
 | Search provider | Meilisearch now, Algolia possible later | Decided (with swap path kept open) |
 
 ---
 
 ## 7. Open Questions For Whoever Picks This Up Next
 
-- Confirm Auth.js session mode (JWT vs database session) — this determines
-  how the NestJS guard is implemented.
-- Finalize Railway vs Fly.io before the deploy workflows are un-commented
-  for real use.
 - Confirm exact dependency versions before first real install — the
   scaffold intentionally uses placeholder versions rather than guessed
   current ones (see scaffold README).
+- Railway's GitHub Actions token-auth setup has had reported rough edges
+  in the wild (see scaffold README) — confirm the current working pattern
+  against Railway's own docs when wiring up `deploy-staging.yml` /
+  `deploy-production.yml` for real, rather than trusting the scaffold's
+  version unverified.

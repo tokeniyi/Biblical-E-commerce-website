@@ -43,11 +43,13 @@ jobs:
           DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
           DIRECT_URL: ${{ secrets.PRODUCTION_DIRECT_URL }}
 
-      # Mirror whichever provider you enabled in deploy-staging.yml here,
-      # pointed at production secrets/service IDs. Keep staging and
-      # production as separate Fly apps / Railway services, not the same
-      # one with different env vars - that's how staging traffic ends up
-      # hitting production by accident.
+      # Keep this as a separate Railway service from staging - not the
+      # same service with different env vars - that's how staging traffic
+      # ends up hitting production by accident.
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
 
-      - name: Deploy API (uncomment your chosen provider)
-        run: echo "Mirror the staging deploy step, pointed at production"
+      - name: Deploy to Railway (production service)
+        run: railway up --service=${{ secrets.RAILWAY_PRODUCTION_SERVICE_ID }}
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
