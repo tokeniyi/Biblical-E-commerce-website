@@ -278,7 +278,44 @@ See `.github/workflows/` for the actual pipeline definitions:
 
 ---
 
-## 6. Decisions Log
+## 6. Build Sequence
+
+Order components should be built in, each as its own branch, respecting
+dependencies so later branches aren't built against assumptions that
+change underneath them.
+
+**Sequential foundation — build in this exact order, one merges before the next starts:**
+
+1. **`feature/shared-core-types`** — `packages/shared`: Zod schemas/types
+   for User, Transaction, and the Auth JWT payload. Almost everything
+   downstream imports from here.
+2. **`feature/prisma-schema`** — Postgres schema (users, transactions) +
+   migrations, with the pooled/unpooled Neon URL split configured.
+3. **`feature/auth-jwt`** — Auth.js (`strategy: "jwt"`) on `apps/web` +
+   the NestJS guard on `apps/api`, verifying via shared `AUTH_SECRET`.
+
+**Parallel — once the foundation above has merged, these don't block each other and can be split across team members:**
+
+4. `feature/payments` — Paystack/Stripe routing, webhooks, reconciliation
+   into the transactions table.
+5. `feature/uploads` — signed upload URL endpoints (Cloudinary/S3).
+6. `feature/search` — Meilisearch adapter + implementation.
+7. `feature/content-revalidation` — Sanity webhook → Next.js revalidation
+   route.
+
+**Then:**
+
+8. `feature/web-*` (one branch per page/flow) — frontend wired against
+   the now-real API endpoints. Most parallelization happens here.
+9. Staging deploy → client UAT → production deploy, per the pipeline in
+   §5.
+
+See each domain's subsection in §3 for the specific tests required before
+a given branch's PR can pass `pr-checks.yml`.
+
+---
+
+## 7. Decisions Log
 
 | Decision | Choice | Status |
 |---|---|---|
@@ -290,7 +327,7 @@ See `.github/workflows/` for the actual pipeline definitions:
 
 ---
 
-## 7. Open Questions For Whoever Picks This Up Next
+## 8. Open Questions For Whoever Picks This Up Next
 
 - Confirm exact dependency versions before first real install — the
   scaffold intentionally uses placeholder versions rather than guessed
