@@ -1,0 +1,61 @@
+name: Deploy Staging
+
+# Runs only after code lands on staging - which, with branch protection
+# rules enabled, can only happen via a merged PR that passed pr-checks.yml.
+on:
+  push:
+    branches:
+      - staging
+
+jobs:
+  deploy-web:
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+      - name: Pull Vercel environment (staging)
+        run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
+      - name: Build
+        run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
+      - name: Deploy prebuilt output to staging
+        run: vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }}
+        # NOTE: verify current flags against Vercel's own CI/CD docs before
+        # relying on this - Vercel's CLI options do change between majors.
+
+  migrate-and-deploy-api:
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "pnpm"
+      - run: pnpm install --frozen-lockfile
+
+      - name: Run Prisma migrations against staging Neon branch
+        run: pnpm --filter api exec prisma migrate deploy
+        env:
+          DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+          DIRECT_URL: ${{ secrets.STAGING_DIRECT_URL }}
+
+      # --- Option A: Fly.io ---
+      # - uses: superfly/flyctl-actions/setup-flyctl@master
+      # - run: flyctl deploy --remote-only --config fly.staging.toml --remote-only
+      #   env:
+      #     FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+      # --- Option B: Railway ---
+      # - name: Deploy to Railway (staging service)
+      #   run: railway up --service=${{ secrets.RAILWAY_STAGING_SERVICE_ID }}
+      #   env:
+      #     RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+      #   # NOTE: Railway's token-auth-in-CI setup has had rough edges
+      #   # reported by users. Confirm the current working pattern against
+      #   # Railway's own docs before depending on this in production.
+
+      - name: Deploy API (uncomment your chosen provider above)
+        run: echo "Pick Fly.io or Railway above once decided"

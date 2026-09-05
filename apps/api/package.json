@@ -1,0 +1,26 @@
+{
+  "name": "api",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "build": "nest build",
+    "start": "nest start",
+    "start:dev": "nest start --watch",
+    "lint": "eslint . --max-warnings 0",
+    "typecheck": "tsc --noEmit",
+    "test": "jest --config ./test/unit/jest.config.js",
+    "test:integration": "jest --config ./test/integration/jest.config.js --runInBand"
+  },
+  "dependencies": {
+    "@your-app/shared": "workspace:*",
+    "@nestjs/common": "latest",
+    "@nestjs/core": "latest",
+    "@prisma/client": "latest"
+  },
+  "devDependencies": {
+    "@nestjs/testing": "latest",
+    "jest": "^29.7.0",
+    "prisma": "latest",
+    "typescript": "^5.4.0"
+  }
+}

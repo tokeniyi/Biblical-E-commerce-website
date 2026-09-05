@@ -1,0 +1,70 @@
+name: PR Checks
+
+# Required check before merge into staging or main. Runs both unit and
+# integration tests. Integration tests get a real, throwaway Postgres
+# instance via the service container below - migrations run against it,
+# then it's discarded when the job ends.
+on:
+  pull_request:
+    branches:
+      - staging
+      - main
+
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "pnpm"
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm turbo run lint typecheck
+      - run: pnpm turbo run test
+
+  integration:
+    runs-on: ubuntu-latest
+    needs: unit
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: test_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      # Add further service containers here the same way if a test
+      # (e.g. search) needs a real Meilisearch instance instead of a mock.
+
+    env:
+      DATABASE_URL: "postgresql://test:test@localhost:5432/test_db"
+      DIRECT_URL: "postgresql://test:test@localhost:5432/test_db"
+      # Webhook test secrets - set these as GitHub Actions repo secrets,
+      # using each provider's TEST/sandbox keys. Never use live keys here.
+      PAYSTACK_TEST_SECRET: ${{ secrets.PAYSTACK_TEST_SECRET }}
+      STRIPE_TEST_SECRET: ${{ secrets.STRIPE_TEST_SECRET }}
+      SANITY_WEBHOOK_TEST_SECRET: ${{ secrets.SANITY_WEBHOOK_TEST_SECRET }}
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "pnpm"
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm turbo run build
+
+      - name: Run Prisma migrations against ephemeral Postgres
+        run: pnpm --filter api exec prisma migrate deploy
+
+      - name: Integration tests
+        run: pnpm turbo run test:integration
