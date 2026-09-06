@@ -2,16 +2,11 @@ import { dirname } from "path";
 import { fileURLToPath } from "url";
 import js from "@eslint/js";
 import tseslint from "typescript-eslint";
-import { FlatCompat } from "@eslint/eslintrc";
+import nextPlugin from "@next/eslint-plugin-next";
 import eslintConfigPrettier from "eslint-config-prettier";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-
-// FlatCompat lets us use eslint-config-next's shareable config (still
-// published in the pre-flat "extends" string format) inside a flat config.
-// This is the same pattern Next.js's own `create-next-app` generates.
-const compat = new FlatCompat({ baseDirectory: __dirname });
 
 export default tseslint.config(
   {
@@ -31,22 +26,25 @@ export default tseslint.config(
   {
     languageOptions: {
       parserOptions: {
-        // "Project Service" (stable since typescript-eslint 8) auto-discovers
-        // the nearest tsconfig.json per file - the recommended approach for
-        // monorepos, instead of manually listing every package's tsconfig.
         projectService: true,
         tsconfigRootDir: __dirname,
       },
     },
   },
 
-  // Next.js-specific rules (core web vitals, image/link/script rules,
-  // server/client boundary checks) - scoped ONLY to apps/web so NestJS
-  // and the shared package aren't linted against browser-app rules.
-  ...compat.extends("next/core-web-vitals", "next/typescript").map((config) => ({
-    ...config,
+  // Next.js-specific rules, registered natively (no FlatCompat) to avoid
+  // a circular-structure crash caused by eslint-plugin-react's flat config
+  // self-referencing when expanded through FlatCompat. Scoped to apps/web only.
+  {
     files: ["apps/web/**/*.{js,jsx,ts,tsx}"],
-  })),
+    plugins: {
+      "@next/next": nextPlugin,
+    },
+    rules: {
+      ...nextPlugin.configs.recommended.rules,
+      ...nextPlugin.configs["core-web-vitals"].rules,
+    },
+  },
 
   // MUST be last: turns off every ESLint rule that fights with Prettier's
   // formatting, so Prettier owns style and ESLint only owns code quality.
