@@ -33,20 +33,24 @@ export default tseslint.config(
   },
 
   // Next.js-specific rules, registered natively (no FlatCompat) to avoid
-    // a circular-structure crash caused by eslint-plugin-react's flat config
-    // self-referencing when expanded through FlatCompat. Scoped to apps/web only.
-    // Files are matched relative to ESLint's cwd (e.g. `eslint .` from apps/web),
-    // so we use a rootless glob that works from any package directory.
-    {
-      files: ["**/*.{js,jsx,ts,tsx}"],
-      plugins: {
-        "@next/next": nextPlugin,
-      },
-      rules: {
-        ...nextPlugin.configs.recommended.rules,
-        ...nextPlugin.configs["core-web-vitals"].rules,
-      },
-    },
+  // a circular-structure crash caused by eslint-plugin-react's flat config
+  // self-referencing when expanded through FlatCompat. Scoped to apps/web only.
+  // Files are matched relative to ESLint's cwd (e.g. `eslint .` from apps/web),
+  // so we only enable these rules when linting from the apps/web package root.
+  ...(/[\\/]apps[\\/]web$/.test(process.cwd())
+    ? [
+        {
+          files: ["**/*.{js,jsx,ts,tsx}"],
+          plugins: {
+            "@next/next": nextPlugin,
+          },
+          rules: {
+            ...nextPlugin.configs.recommended.rules,
+            ...nextPlugin.configs["core-web-vitals"].rules,
+          },
+        },
+      ]
+    : []),
 
   // MUST be last: turns off every ESLint rule that fights with Prettier's
   // formatting, so Prettier owns style and ESLint only owns code quality.
