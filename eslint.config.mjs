@@ -54,5 +54,15 @@ export default tseslint.config(
 
   // MUST be last: turns off every ESLint rule that fights with Prettier's
   // formatting, so Prettier owns style and ESLint only owns code quality.
+  {
+    rules: {
+      "@typescript-eslint/no-unused-vars": ["error", {
+        "varsIgnorePattern": "^_",
+        "argsIgnorePattern": "^_",
+        "caughtErrorsIgnorePattern": "^_"
+      }]
+    }
+  },
+
   eslintConfigPrettier,
 );
