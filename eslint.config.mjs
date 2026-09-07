@@ -54,6 +54,13 @@ export default tseslint.config(
       ]
     : []),
 
+  {
+    files: ["**/jest.config.js", "**/next.config.js"],
+    rules: {
+      "no-undef": "off"
+    }
+  },
+
   // MUST be last: turns off every ESLint rule that fights with Prettier's
   // formatting, so Prettier owns style and ESLint only owns code quality.
   {
