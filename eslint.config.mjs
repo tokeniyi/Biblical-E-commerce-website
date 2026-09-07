@@ -28,6 +28,7 @@ export default tseslint.config(
       parserOptions: {
         projectService: true,
         tsconfigRootDir: __dirname,
+        allowDefaultProject: true,
       },
     },
   },
@@ -47,6 +48,7 @@ export default tseslint.config(
           rules: {
             ...nextPlugin.configs.recommended.rules,
             ...nextPlugin.configs["core-web-vitals"].rules,
+            "next/no-html-link-for-pages": "off",
           },
         },
       ]
