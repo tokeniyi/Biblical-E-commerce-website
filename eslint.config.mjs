@@ -16,6 +16,8 @@ export default tseslint.config(
       "**/.turbo/**",
       "**/coverage/**",
       "**/node_modules/**",
+      "**/jest.config.js",
+      "**/next.config.js",
     ],
   },
 
@@ -53,17 +55,6 @@ export default tseslint.config(
         },
       ]
     : []),
-
-  {
-    files: ["**/jest.config.js", "**/next.config.js"],
-    rules: {
-      "no-undef": "off",
-      "@typescript-eslint/no-require-imports": "off",
-      "@typescript-eslint/no-unsafe-assignment": "off",
-      "@typescript-eslint/no-unsafe-member-access": "off",
-      "@typescript-eslint/no-unsafe-return": "off"
-    }
-  },
 
   // MUST be last: turns off every ESLint rule that fights with Prettier's
   // formatting, so Prettier owns style and ESLint only owns code quality.
