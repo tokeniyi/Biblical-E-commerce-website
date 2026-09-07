@@ -21,12 +21,12 @@ describe("UserSchema", () => {
   });
 
   it("rejects a missing id", () => {
-    const { id, ...withoutId } = validUser;
+    const { id: _id, ...withoutId } = validUser;
     expect(UserSchema.safeParse(withoutId).success).toBe(false);
   });
 
   it("allows name and image to be omitted", () => {
-    const { name, image, ...minimal } = validUser;
+    const { name: _name, image: _image, ...minimal } = validUser;
     expect(UserSchema.safeParse(minimal).success).toBe(true);
   });
 });

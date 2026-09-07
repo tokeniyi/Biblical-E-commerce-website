@@ -17,7 +17,7 @@ describe("AuthJwtPayloadSchema", () => {
   });
 
   it("rejects a payload missing 'sub'", () => {
-    const { sub, ...withoutSub } = validPayload;
+    const { sub: _sub, ...withoutSub } = validPayload;
     expect(AuthJwtPayloadSchema.safeParse(withoutSub).success).toBe(false);
   });
 
@@ -27,7 +27,7 @@ describe("AuthJwtPayloadSchema", () => {
   });
 
   it("allows 'name' to be omitted or null", () => {
-    const { name, ...withoutName } = validPayload;
+    const { name: _name, ...withoutName } = validPayload;
     expect(AuthJwtPayloadSchema.safeParse(withoutName).success).toBe(true);
     expect(AuthJwtPayloadSchema.safeParse({ ...validPayload, name: null }).success).toBe(true);
   });
