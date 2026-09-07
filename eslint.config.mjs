@@ -16,6 +16,8 @@ export default tseslint.config(
       "**/.turbo/**",
       "**/coverage/**",
       "**/node_modules/**",
+      "**/jest.config.js",
+      "**/next.config.js",
     ],
   },
 
@@ -28,6 +30,7 @@ export default tseslint.config(
       parserOptions: {
         projectService: true,
         tsconfigRootDir: __dirname,
+        allowDefaultProject: true,
       },
     },
   },
@@ -47,6 +50,7 @@ export default tseslint.config(
           rules: {
             ...nextPlugin.configs.recommended.rules,
             ...nextPlugin.configs["core-web-vitals"].rules,
+            "next/no-html-link-for-pages": "off",
           },
         },
       ]
@@ -54,5 +58,15 @@ export default tseslint.config(
 
   // MUST be last: turns off every ESLint rule that fights with Prettier's
   // formatting, so Prettier owns style and ESLint only owns code quality.
+  {
+    rules: {
+      "@typescript-eslint/no-unused-vars": ["error", {
+        "varsIgnorePattern": "^_",
+        "argsIgnorePattern": "^_",
+        "caughtErrorsIgnorePattern": "^_"
+      }]
+    }
+  },
+
   eslintConfigPrettier,
 );

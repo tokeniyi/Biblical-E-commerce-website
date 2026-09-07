@@ -13,8 +13,8 @@
   "devDependencies": {
     "@types/jest": "^30.0.0",
     "turbo": "^2.0.0",
-    "eslint": "^9.36.0",
-    "@eslint/js": "^9.36.0",
+      "eslint": "^10.10.0",
+      "@eslint/js": "^10.0.1",
     "typescript-eslint": "^8.46.0",
     "@next/eslint-plugin-next": "16.3.4",
     "eslint-config-prettier": "^9.1.0",

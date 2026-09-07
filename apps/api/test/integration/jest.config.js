@@ -14,4 +14,8 @@ module.exports = {
   transform: { "^.+\\.(t|j)s$": "ts-jest" },
   moduleFileExtensions: ["js", "json", "ts"],
   testTimeout: 30000,
+  moduleNameMapper: {
+    '^@/(.*)$': '<rootDir>/src/$1',
+    '^@shared/(.*)$': '<rootDir>/../../packages/shared/src/$1',
+  },
 };
