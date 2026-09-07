@@ -57,7 +57,11 @@ export default tseslint.config(
   {
     files: ["**/jest.config.js", "**/next.config.js"],
     rules: {
-      "no-undef": "off"
+      "no-undef": "off",
+      "@typescript-eslint/no-require-imports": "off",
+      "@typescript-eslint/no-unsafe-assignment": "off",
+      "@typescript-eslint/no-unsafe-member-access": "off",
+      "@typescript-eslint/no-unsafe-return": "off"
     }
   },
 
