@@ -276,6 +276,18 @@ See `.github/workflows/` for the actual pipeline definitions:
 `unit-tests.yml`, `pr-checks.yml`, `deploy-staging.yml`,
 `deploy-production.yml`.
 
+See `TESTING.md` for test runner configuration and gotchas when adding
+packages.
+
+---
+
+## 5a. Development Setup
+
+- **Testing:** `TESTING.md` — runner setup, `passWithNoTests`, adding new test files
+- **Linting:** `LINTING.md` — ESLint flat config, per-package requirements, Next.js rules
+- **Path Aliases:** `PATH-ALIASES.md` — `@/` and `@shared/` aliases, config per tool
+- **Monorepo Structure:** `MONOREPO.md` — package layout, shared contracts, Turbo tasks
+
 ---
 
 ## 6. Build Sequence

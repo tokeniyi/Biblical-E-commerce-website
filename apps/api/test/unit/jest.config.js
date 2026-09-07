@@ -10,4 +10,9 @@ module.exports = {
   transform: { "^.+\\.(t|j)s$": "ts-jest" },
   moduleFileExtensions: ["js", "json", "ts"],
   collectCoverageFrom: ["src/**/*.ts"],
+  passWithNoTests: true,
+  moduleNameMapper: {
+    '^@/(.*)$': '<rootDir>/src/$1',
+    '^@shared/(.*)$': '<rootDir>/../../packages/shared/src/$1',
+  },
 };
