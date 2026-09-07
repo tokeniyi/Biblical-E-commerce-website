@@ -2,19 +2,27 @@
 
 ## Aliases
 
-| Alias | Resolves to |
-|-------|-------------|
-| `@/` | `<package>/src/` |
-| `@shared/` | `packages/shared/src/` |
+| Alias | Resolves to | Used for |
+|-------|-------------|----------|
+| `@/*` | `./src/*` (per-package) | Internal imports within each app |
+| `@shared/*` | `../../packages/shared/src/*` | Imports from the shared Zod schemas package |
 
-## Config Per Tool
+## Example
 
-Path aliases must be registered in **every tool** that resolves imports. Missing one causes "module not found" errors at build, test, or typecheck time.
+```ts
+// Before (relative paths)
+import { UserSchema } from '../../packages/shared/src/schemas/user.schema';
+import { authService } from '../../../src/services/auth.service';
 
-### tsconfig.json
+// After (aliases)
+import { UserSchema } from '@shared/schemas/user.schema';
+import { authService } from '@/services/auth.service';
+```
 
-Each package's `tsconfig.json` needs `baseUrl` and `paths`:
+Config Files That Need Updates
+When adding a new alias, update all four config files:
 
+1. tsconfig.json (TypeScript)
 ```json
 {
   "compilerOptions": {
@@ -27,12 +35,7 @@ Each package's `tsconfig.json` needs `baseUrl` and `paths`:
 }
 ```
 
-The `@shared/*` path is relative to the package root, so it climbs out of `apps/web` or `apps/api` into `packages/shared`.
-
-### Next.js (apps/web only)
-
-`apps/web/next.config.js` adds webpack aliases:
-
+2. apps/web/next.config.js (Next.js webpack)
 ```js
 webpack: (config) => {
   config.resolve.alias = {
@@ -44,12 +47,7 @@ webpack: (config) => {
 },
 ```
 
-Next.js compiles in the browser, so webpack needs to know about these aliases at build time.
-
-### Vitest
-
-`apps/web/vitest.config.ts` and any new Vitest config:
-
+3. apps/web/vitest.config.ts (Vitest)
 ```ts
 resolve: {
   alias: {
@@ -59,10 +57,7 @@ resolve: {
 },
 ```
 
-### Jest
-
-`apps/api/test/unit/jest.config.js` (and integration configs):
-
+4. apps/api/test/unit/jest.config.js (Jest)
 ```js
 moduleNameMapper: {
   '^@/(.*)$': '<rootDir>/src/$1',
@@ -70,34 +65,17 @@ moduleNameMapper: {
 },
 ```
 
-Note the regex capture group `(.*)` — Jest's `moduleNameMapper` uses regex patterns, so the alias must include a wildcard.
+Also update apps/api/test/integration/jest.config.js with the same moduleNameMapper.
 
-## Why Aliases Over Relative Paths
+Editor Support
+VS Code reads tsconfig.json automatically. No extra editor config is needed for IntelliSense and auto-imports to respect the aliases.
 
-Relative paths like `../../../packages/shared/src/schemas` break when files move. Aliases stay stable regardless of file depth.
+Tradeoffs
+| Relative paths (../../) | Aliases (@/) |
+|--------------------------|--------------|
+| Works out of the box | Cleaner, easier to move files |
+| Fragile - breaks when moving files | Requires config in 4+ files |
+| Hard to read in deeply nested files | Standard convention in TS monorepos |
 
-The tradeoff: you must update **4 configs** when adding or changing an alias, and your editor needs matching settings (see below).
-
-## Editor Setup
-
-VS Code needs the same paths to resolve imports during IntelliSense and go-to-definition. Add to `.vscode/settings.json`:
-
-```json
-{
-  "typescript.tsdk": "node_modules/typescript/lib",
-  "typescript.enablePromptUseWorkspaceTsdk": true
-}
-```
-
-If IntelliSense doesn't resolve aliases, ensure the workspace TS version is selected (status bar shows it).
-
-## Adding a New Alias
-
-1. Add the mapping to every `tsconfig.json` in the monorepo
-2. Add webpack alias to `apps/web/next.config.js`
-3. Add Vitest alias to each `vitest.config.ts`
-4. Add Jest mapping to each `jest.config.js`
-5. Update `.vscode/settings.json` if needed
-6. Update this file
-
-**Do not skip any tool.** A missing config in one tool causes silent failures (e.g. tests pass but production build breaks).
+When to Add Aliases
+Add aliases only when you actually need them. The project scaffolds fine without them. The cost is maintaining 4 config files per alias.

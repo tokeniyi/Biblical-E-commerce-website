@@ -1,104 +1,49 @@
 # Monorepo Structure
 
-## Package Map
+## Packages
+apps/ web/ - Next.js frontend (deployed to Vercel) api/ - NestJS backend (deployed to Railway/Fly.io) packages/ shared/ - Zod schemas and TypeScript types shared by both apps
 
-```
-apps/
-  web/        Next.js frontend (deployed to Vercel)
-  api/        NestJS backend (deployed to Railway/Fly.io)
-packages/
-  shared/     Zod schemas + TypeScript types shared by both apps
-```
-
-## pnpm Workspace
-
-Defined in `pnpm-workspace.yaml`:
-
-```yaml
-packages:
-  - "apps/*"
-  - "packages/*"
-```
-
-pnpm uses strict `node_modules` isolation — each workspace package gets its own `node_modules` and cannot access the root `node_modules`. This is why every package installs its own ESLint, TypeScript, and test runner binaries.
-
-Workspace protocol (`workspace:*`) links local packages. `apps/web` and `apps/api` both depend on `@your-app/shared` via `"@your-app/shared": "workspace:*"`.
 
 ## Why `packages/shared` Exists
 
-Both apps need to agree on the shape of every shared entity. Without a single source of truth:
+Both `apps/web` and `apps/api` need to agree on payload shapes (User, Transaction,
+Auth JWT, etc.). `packages/shared` is the single source of truth:
 
-- `apps/web` defines `User` one way, `apps/api` defines it slightly differently
-- A payload change in one app breaks the other at runtime
-- Zod validation logic is duplicated
-
-`packages/shared` contains:
 - Zod schemas for runtime validation
-- TypeScript types derived from those schemas
-- Any other pure logic both apps need (constants, utilities)
+- TypeScript types inferred from those schemas
+- Both apps import from here instead of redefining shapes independently
 
-**Rule:** If a type or schema is used by more than one app, it lives in `packages/shared`.
+If you change a payload shape, change it here first. Both apps will stay in sync.
+
+## pnpm Workspace Layout
+pnpm-workspace.yaml packages:
+
+"apps/*"
+"packages/*"
+
+Each workspace package gets its own isolated `node_modules/`. pnpm does not
+symlink `devDependencies` across package boundaries.
 
 ## Turbo Pipeline
 
-`turbo.json` defines task dependencies and outputs:
+Turbo orchestrates tasks across packages. Key tasks:
 
-```json
-{
-  "tasks": {
-    "build": {
-      "dependsOn": ["^build"],
-      "outputs": [".next/**", "!.next/cache/**", "dist/**"]
-    },
-    "dev": {
-      "cache": false,
-      "persistent": true
-    },
-    "lint": {
-      "outputs": []
-    },
-    "typecheck": {
-      "outputs": []
-    },
-    "test": {
-      "dependsOn": ["^build"],
-      "outputs": ["coverage/**"]
-    },
-    "test:integration": {
-      "dependsOn": ["build"],
-      "outputs": []
-    }
-  }
-}
-```
+| Task | Command | Depends on |
+|------|---------|------------|
+| `lint` | `eslint . --max-warnings 0` | - |
+| `typecheck` | `tsc --noEmit` | - |
+| `test` | `vitest run` / `jest ...` | `^build` |
+| `build` | `next build` / `nest build` | `^build` |
 
-### Key behaviors
-
-- **`^build`** — a package's `build` depends on its dependencies' `build` completing first. So `packages/shared` builds before `apps/web` and `apps/api`.
-- **`test` depends on `^build`** — tests run after upstream packages have built, ensuring the latest shared code is available.
-- **`test:integration` depends on `build`** (not `^build`) — integration tests only need the current package built, not upstream packages.
-- **`dev` is persistent and uncached** — long-running dev servers shouldn't be cached or killed between Turbo runs.
-- **`lint` and `typecheck` have no outputs** — Turbo doesn't cache these results.
-
-### Running Turbo tasks
-
-```bash
-pnpm turbo run build     # Build all packages in dependency order
-pnpm turbo run test      # Run tests in all packages
-pnpm turbo run lint      # Lint all packages
-pnpm turbo run typecheck # Typecheck all packages
-```
-
-Turbo exits non-zero if any package exits non-zero.
+`^build` means "wait for all dependencies to build first". So `apps/api` tests
+wait for `packages/shared` to finish building.
 
 ## Adding a New Workspace Package
 
-1. Create the directory under `apps/` or `packages/`
-2. Add a `package.json` with a `name` field
-3. Add scripts for `build`, `lint`, `typecheck`, `test`
-4. If the package depends on `@your-app/shared`, add `"@your-app/shared": "workspace:*"`
-5. Run `pnpm install` — pnpm will auto-link the workspace dependency
-6. If the package needs tests, configure the runner per `TESTING.md`
-7. If the package needs linting, the root `eslint.config.mjs` covers it automatically
-8. If the package needs path aliases, add them per `PATH-ALIASES.md`
-9. If the package has a build step, Turbo will auto-detect it
+1. Create the package directory under `apps/` or `packages/`
+2. Add it to `pnpm-workspace.yaml` if the glob doesn't already match
+3. Add a `package.json` with `name`, `version`, `scripts`, `dependencies`
+4. Add a `tsconfig.json` with `allowJs`, `allowDefaultProject` considerations
+5. If it has a `lint` script, install ESLint deps locally (see LINTING.md)
+6. If it has a `test` script, add `passWithNoTests: true` (see TESTING.md)
+7. If it uses path aliases, update all 4 config files (see PATH-ALIASES.md)

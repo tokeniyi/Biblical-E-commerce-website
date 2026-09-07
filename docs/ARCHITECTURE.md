@@ -283,10 +283,10 @@ packages.
 
 ## 5a. Development Setup
 
-- **Testing:** `TESTING.md` — runner setup, `passWithNoTests`, adding new test files
-- **Linting:** `LINTING.md` — ESLint flat config, per-package requirements, Next.js rules
-- **Path Aliases:** `PATH-ALIASES.md` — `@/` and `@shared/` aliases, config per tool
-- **Monorepo Structure:** `MONOREPO.md` — package layout, shared contracts, Turbo tasks
+- **Testing:** `TESTING.md` - runner setup, `passWithNoTests`, adding new test files
+- **Linting:** `LINTING.md` - ESLint flat config, per-package requirements, Next.js rules
+- **Path Aliases:** `PATH-ALIASES.md` - `@/` and `@shared/` aliases, config per tool
+- **Monorepo Structure:** `MONOREPO.md` - package layout, shared contracts, Turbo tasks
 
 ---
 
