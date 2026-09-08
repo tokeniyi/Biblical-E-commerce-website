@@ -12,19 +12,123 @@ Implement JWT-based authentication where:
 - `apps/api` (NestJS) independently verifies that JWT on every protected request using a shared `AUTH_SECRET` — no database session lookup, no shared process with Next.js.
 - Both sides share the exact JWT payload contract via `packages/shared/src/schemas/auth.schema.ts`.
 
+## Why This Architecture? (Stateless JWT, Not Database Sessions)
+
+This is decided, not open for debate at implementation time — see `ARCHITECTURE.md` §3.1 for the full reasoning. Short version:
+
+- ✓ **No shared session database** — `apps/api` never has to hit Postgres just to check if a request is authenticated.
+- ✓ **Serverless-friendly** — Neon is serverless/decoupled; a DB-session lookup on every request would add latency and inflate connection usage. JWT verification is local.
+- ✓ **Independent deploys** — `apps/web` (Vercel) and `apps/api` (Railway/Fly.io) never share a process or a session store. They share exactly one secret: `AUTH_SECRET`.
+- ✓ **Self-contained requests** — every request carries everything `apps/api` needs to verify it, with no round trip back to Next.js or Auth.js.
+
+If you're extending or troubleshooting this system later, this is the constraint everything else in this doc is built around.
+
+```
+Browser
+   │  login
+   ▼
+Next.js / Auth.js  ──issues JWT──▶  Browser
+                                       │  Bearer token
+                                       ▼
+                                   NestJS ──verify──▶ Controller
+```
+
+## Architecture Principle: Who Owns the JWT
+
+This single paragraph resolves most of the confusion new contributors hit:
+
+- **Auth.js (`apps/web`)** issues JWTs. It signs them, stores them (typically as an httpOnly cookie), and refreshes/rotates them.
+- **NestJS (`apps/api`)** never issues JWTs and never modifies JWTs. It only **verifies** them — signature + expiry — using the shared `AUTH_SECRET`.
+
+If you find yourself writing code in `apps/api` that creates or re-signs a token, stop — that's a sign the JWT is being generated in the wrong place.
+
+### JWT vs. Session — these are not the same thing
+
+| | JWT | Session (React) |
+|---|---|---|
+| **Sent to** | `apps/api` (as `Authorization: Bearer <token>`) | Not sent anywhere — it's client-side UI state |
+| **Purpose** | Authorization for API calls | Drives what the UI renders (logged in/out, user's name, etc.) |
+| **Verified by** | NestJS (`JwtAuthGuard` / `jwt.strategy.ts`) | Not "verified" — it's just read by React components |
+
+They're related but derived from each other in one direction only:
+
+```
+JWT (signed, on the wire)
+  ↓
+Auth.js `session` callback (reads the JWT payload)
+  ↓
+`session.user` (what `useSession()` / `auth()` return to your components)
+```
+
+Do not conflate "the session looks logged out" with "the JWT is invalid" — they can drift if the `session` callback and the JWT payload aren't kept in sync. If you change one, check the other.
+
 ## Prerequisites
 
 Before starting any task below, confirm:
 
 - `feature/shared-core-types` is merged. `AuthJwtPayloadSchema` exists in `packages/shared/src/schemas/auth.schema.ts`.
-- `feature/prisma-schema` is merged. `User` model exists in `apps/api/prisma/schema.prisma`.
-- You have a generated `AUTH_SECRET` (32+ random characters). Use the same value in both `apps/web/.env.local` and `apps/api/.env`.
+- `feature/prisma-schema` is merged. `User` model exists in `apps/api/prisma/schema.prisma` and includes, at minimum, the fields authentication depends on:
+
+  ```prisma
+  model User {
+    id           String   @id @default(cuid())
+    email        String   @unique
+    passwordHash String
+    name         String?
+  }
+  ```
+
+  **⚠️ Verify this against the actual `feature/prisma-schema` model before starting Task 4/9** — this is the canonical shape assumed by this guide, not a guarantee of what was actually merged. If the real model differs (different field names, an enum for role, etc.), reconcile the two before writing the Credentials provider or the JWT payload mapping, so every developer is working from the same schema instead of inventing their own.
+
+- You have a generated `AUTH_SECRET` (32+ random characters). Use the same value in both `apps/web/.env.local` and `apps/api/.env`. Generate one with either:
+
+  ```bash
+  npx auth secret        # Auth.js v5 CLI helper — writes/prints a secret
+  # or
+  openssl rand -base64 32
+  ```
+
 - Local Postgres is running and `DATABASE_URL` / `DIRECT_URL` are set in `apps/api/.env`.
 - pnpm workspaces are installed (`pnpm install` from repo root).
 
 ---
 
+## Seed Test User
+
+Tasks 14–16 assume you can log in, but nothing above explains how to get a user into the database. Every developer should be testing against the same credentials:
+
+- **Email:** `test@example.com`
+- **Password:** `password123`
+
+Seed it with a Prisma seed script (`apps/api/prisma/seed.ts`) that hashes the password with bcrypt before inserting — do not store `password123` in plaintext in the `passwordHash` column:
+
+```typescript
+import { PrismaClient } from "@prisma/client";
+import bcrypt from "bcrypt";
+
+const prisma = new PrismaClient();
+
+async function main() {
+  const passwordHash = await bcrypt.hash("password123", 10);
+  await prisma.user.upsert({
+    where: { email: "test@example.com" },
+    update: {},
+    create: { email: "test@example.com", passwordHash, name: "Test User" },
+  });
+}
+
+main().finally(() => prisma.$disconnect());
+```
+
+Wire it as the `prisma.seed` entry in `apps/api/package.json` and run with `pnpm --filter api prisma db seed`. **Confirm the exact seed command/tooling against what `feature/prisma-schema` actually set up** — if that branch already established a seeding convention, use it instead of introducing a second one.
+
+---
+
 ## Task 1: Shared Contract Audit
+
+**Depends on:** nothing — this is the starting point.
+
+**Why this contract exists:** `AuthJwtPayloadSchema` is the canonical contract between the JWT producer (Auth.js, on `apps/web`) and the JWT consumer (NestJS, on `apps/api`). Neither side owns it unilaterally — any change to the schema must be implemented on both sides in the same PR, or the two apps will silently disagree about what a valid token looks like.
 
 **Purpose:** Confirm the contract both apps will share is complete and correct.
 
@@ -35,6 +139,8 @@ Before starting any task below, confirm:
    - `AuthJwtPayloadSchema` (Zod) with fields: `sub` (uuid), `email` (email), `name` (nullable string, optional), `iat` (number), `exp` (number).
    - `AuthJwtPayload` (TypeScript type).
 3. Confirm `packages/shared/src/schemas/index.ts` re-exports `./auth.schema`.
+
+**`iat`/`exp` are in seconds, not milliseconds:** per [RFC 7519](https://www.rfc-editor.org/rfc/rfc7519) §2, JWT `NumericDate` values are seconds since the Unix epoch — not `Date.now()`'s milliseconds. If either side computes these with `Date.now()` directly instead of `Math.floor(Date.now() / 1000)`, tokens will appear expired almost immediately (if compared as seconds elsewhere) or valid for ~1000x longer than intended (if the mismatch goes the other way). Auth.js's JWT encoding and NestJS's `passport-jwt`/`jose` verification both assume seconds — this is why the schema's `iat`/`exp` are typed as plain numbers rather than `Date` objects.
 
 **Expected result:** Both exports exist and compile. No code changes needed unless you want to add more claims (e.g., `role`). If you add claims, update the Auth.js JWT callback on the Next.js side AND the NestJS guard — both must stay in sync.
 
@@ -47,6 +153,8 @@ Before starting any task below, confirm:
 ---
 
 ## Task 2: apps/web — Install Auth.js v5 and Dependencies
+
+**Depends on:** Task 1 (shared contract confirmed).
 
 **Purpose:** Add the Next.js auth libraries and the JWT library we will use.
 
@@ -70,6 +178,8 @@ Before starting any task below, confirm:
 
 ## Task 3: apps/web — Environment Configuration
 
+**Depends on:** Task 2 (Auth.js installed).
+
 **Purpose:** Add `AUTH_SECRET` to the Next.js environment.
 
 **Steps:**
@@ -90,7 +200,30 @@ Before starting any task below, confirm:
 
 ---
 
+### Login Flow, End to End
+
+```
+User
+ │  submits email + password
+ ▼
+Next.js Login (Credentials provider)
+ │  Auth.js runs authorize()
+ ▼
+JWT Created (signed with AUTH_SECRET)
+ │  stored as httpOnly cookie
+ ▼
+Browser
+ │  apps/web attaches it as Authorization: Bearer <token>
+ ▼
+NestJS
+ │  Passport verifies signature
+ ▼
+Controller (e.g. GET /auth/me)
+```
+
 ## Task 4: apps/web — Create Auth.js Configuration
+
+**Depends on:** Task 3 (`AUTH_SECRET` configured in both apps).
 
 **Purpose:** Set up Auth.js v5 with JWT strategy.
 
@@ -110,6 +243,17 @@ Before starting any task below, confirm:
    - `callbacks.session`: Return `{ user: { id, email, name } }` from the JWT so the session is usable in React/components.
 3. Export the auth config as default.
 
+### Credentials Provider Authentication
+
+Task 4 says "Credentials or dummy provider" but doesn't specify how credentials are actually checked — this closes that gap. If you use `CredentialsProvider`, its `authorize()` function must authenticate against the `User` table:
+
+1. Look up the user by email using Prisma (`prisma.user.findUnique({ where: { email } })`).
+2. Compare the submitted password against the stored `passwordHash` using `bcrypt.compare()`.
+3. Return the user object if authentication succeeds.
+4. Return `null` if the user doesn't exist or the password doesn't match — do not throw; Auth.js expects `null` for "auth failed."
+
+A dummy/no-op provider (always returns a fixed fake user) may be used only for temporary scaffolding while other tasks are being built in parallel — it must not reach a PR that's meant to be mergeable, since it means nothing is actually being verified.
+
 **Contract enforcement:** The JWT callback's return shape is the single source of truth for the token NestJS will verify. Keep it aligned with `AuthJwtPayloadSchema`.
 
 **Test:**
@@ -122,6 +266,8 @@ Before starting any task below, confirm:
 ---
 
 ## Task 5: apps/web — Create Auth.js Route Handler
+
+**Depends on:** Task 4 (Auth.js config exists).
 
 **Purpose:** Expose Auth.js endpoints in Next.js App Router.
 
@@ -155,6 +301,8 @@ export const POST = auth;
 
 ## Task 6: apps/web — Create Login/Logout UI (Minimal)
 
+**Depends on:** Task 5 (route handler exposed).
+
 **Purpose:** Give users a way to trigger sign-in and sign-out.
 
 **Steps:**
@@ -171,16 +319,18 @@ export const POST = auth;
 
 ## Task 7: apps/web — Create API Client Helper for Bearer Token
 
+**Depends on:** Task 6 (login/logout UI works, so there's a session to test against).
+
 **Purpose:** Attach the JWT as `Authorization: Bearer` on every request to `apps/api`.
 
 **Steps:**
 
 1. Create `apps/web/src/lib/api-client.ts`.
-2. Export a `getApiFetch()` helper that:
-   - Gets the current session (server-side via `getServerSession(authOptions)` or client-side via `useSession`).
-   - Attaches `Authorization: Bearer <token>` header to requests going to `apps/api`.
-   - Handles 401 responses by clearing the session and redirecting to login.
-3. Alternatively, create a lightweight wrapper around `fetch` that accepts the endpoint and options and injects the header.
+2. Export a `getApiFetch()` helper that gets the current session and attaches `Authorization: Bearer <token>` to requests going to `apps/api`. Don't leave "get the session" open-ended — use exactly one method per context, matching Auth.js v5's API (this replaces the v4 `getServerSession(authOptions)` pattern):
+   - **Server Components / Route Handlers / Server Actions:** use `auth()`, exported from `apps/web/src/auth.ts` (Task 4). It reads the session server-side with no extra provider needed.
+   - **Client Components:** use `useSession()` from `next-auth/react`, wrapped in a `<SessionProvider>` higher up the tree.
+3. Handle 401 responses by clearing the session and redirecting to login.
+4. Alternatively, create a lightweight wrapper around `fetch` that accepts the endpoint and options and injects the header — but it should still call `auth()`/`useSession()` internally per the rule above, not invent a third way to read the session.
 
 **Rules:**
 
@@ -195,6 +345,8 @@ export const POST = auth;
 ---
 
 ## Task 8: apps/api — Bootstrap NestJS Application
+
+**Depends on:** nothing on the `apps/web` side — this can be built in parallel with Tasks 2–7 once Task 1 (shared contract) is confirmed.
 
 **Purpose:** Create the NestJS app structure if it does not already exist.
 
@@ -247,6 +399,8 @@ These should already exist. If not, add them.
 
 ## Task 9: apps/api — Install Auth Dependencies
 
+**Depends on:** Task 8 (NestJS app bootstrapped).
+
 **Purpose:** Add Passport, JWT strategy, and JOSE libraries.
 
 **Steps:**
@@ -268,6 +422,8 @@ pnpm add -D @types/passport-jwt
 
 ## Task 10: apps/api — Create JWT Payload Validation
 
+**Depends on:** Task 9 (auth dependencies installed).
+
 **Purpose:** Validate the incoming JWT payload against the shared Zod schema before NestJS uses it.
 
 **Steps:**
@@ -284,6 +440,8 @@ pnpm add -D @types/passport-jwt
 ---
 
 ## Task 11: apps/api — Create JWT Strategy
+
+**Depends on:** Task 10 (`validateJwtPayload` exists).
 
 **Purpose:** Verify the JWT signature and extract the payload.
 
@@ -303,6 +461,26 @@ pnpm add -D @types/passport-jwt
    - If validation fails, throw `UnauthorizedException`.
 5. Do NOT hit the database in the strategy. Verification is local — no DB round-trip.
 
+**What `validate()` does — and doesn't — do:** this is one of the most common JWT misconceptions on this stack. By the time `validate()` runs, the signature *and* the expiry have **already** been checked — that's Passport's job, not yours:
+
+```
+JWT arrives (Authorization: Bearer <token>)
+  │
+  ▼
+Verify signature (via secretOrKey / AUTH_SECRET)
+  │   ← bad signature is rejected here, before your code runs
+  ▼
+Check expiry (exp claim vs. current time)
+  │   ← expired token is rejected here too
+  ▼
+validate(payload)  ← your code — only re-checks payload *shape*
+  │                    (via validateJwtPayload) and decides what
+  │                    becomes req.user. It does not re-verify
+  │                    the signature or expiry a second time.
+  ▼
+req.user
+```
+
 **Contract enforcement:** The strategy's extracted user object shape must align with what `CurrentUser` decorator expects.
 
 **Test:**
@@ -313,6 +491,8 @@ pnpm add -D @types/passport-jwt
 ---
 
 ## Task 12: apps/api — Create JWT Auth Guard
+
+**Depends on:** Task 11 (JWT strategy exists — the guard wraps it).
 
 **Purpose:** Protect routes by requiring a valid JWT.
 
@@ -339,6 +519,8 @@ curl http://localhost:3001/protected
 ---
 
 ## Task 13: apps/api — Create `@CurrentUser` Decorator
+
+**Depends on:** Task 11 (strategy populates `req.user`) — can be built alongside Task 12.
 
 **Purpose:** Extract the authenticated user ID from the verified JWT payload cleanly.
 
@@ -367,6 +549,8 @@ export const CurrentUser = createParamDecorator(
 ---
 
 ## Task 14: apps/api — Protect a Test Endpoint (GET /auth/me)
+
+**Depends on:** Task 12 (guard) and Task 13 (decorator) — needs both.
 
 **Purpose:** Create a real endpoint that returns the current authenticated user, proving the full auth chain works.
 
@@ -398,7 +582,28 @@ export const CurrentUser = createParamDecorator(
 
 ---
 
+### Cross-App Verification Flow
+
+```
+apps/web (Auth.js)                      apps/api (NestJS)
+       │                                        │
+       │  issues JWT (signed w/ AUTH_SECRET)    │
+       ▼                                        │
+   JWT token ─────────── sent as ──────────────▶│
+                    Authorization: Bearer         │
+                                                  ▼
+                                     JwtAuthGuard → jwt.strategy
+                                     verifies signature locally
+                                     (same AUTH_SECRET, no call
+                                      back to apps/web)
+                                                  │
+                                                  ▼
+                                          200 + req.user
+```
+
 ## Task 15: End-to-End Integration Test (Cross-App)
+
+**Depends on:** Task 7 (`apps/web` can attach the bearer token) and Task 14 (`apps/api` has a protected endpoint to hit).
 
 **Purpose:** Verify a JWT issued by Auth.js on the Next.js side is accepted by the NestJS guard.
 
@@ -424,6 +629,8 @@ export const CurrentUser = createParamDecorator(
 ---
 
 ## Task 16: Token Expiry and Logout Verification
+
+**Depends on:** Task 15 (full cross-app flow already verified for the happy path).
 
 **Purpose:** Confirm the system correctly rejects expired tokens and clears tokens on logout.
 
