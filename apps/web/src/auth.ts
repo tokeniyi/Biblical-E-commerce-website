@@ -1,7 +1,9 @@
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
+import { AUTH_SECRET } from "@/infrastructure/config/env";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
+  secret: AUTH_SECRET,
   providers: [
     CredentialsProvider({
       name: "Credentials",
@@ -15,7 +17,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         }
         return {
           id: "00000000-0000-0000-0000-000000000000",
-          email: credentials.email,
+          email: credentials.email as string,
           name: "Test User",
         };
       },

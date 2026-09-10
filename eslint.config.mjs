@@ -18,6 +18,7 @@ export default tseslint.config(
       "**/node_modules/**",
       "**/jest.config.js",
       "**/next.config.js",
+      "**/test/setup.js",
     ],
   },
 
@@ -56,17 +57,43 @@ export default tseslint.config(
       ]
     : []),
 
-  // MUST be last: turns off every ESLint rule that fights with Prettier's
-  // formatting, so Prettier owns style and ESLint only owns code quality.
+  // Config file overrides (CommonJS globals) — Next.js configs use
+  // require()/module.exports, which the type-aware linter flags.
+  {
+    files: ["**/jest.config.js", "**/next.config.js"],
+    rules: {
+      "no-undef": "off",
+      "@typescript-eslint/no-require-imports": "off",
+      "@typescript-eslint/no-unsafe-assignment": "off",
+      "@typescript-eslint/no-unsafe-member-access": "off",
+      "@typescript-eslint/no-unsafe-return": "off",
+      "@typescript-eslint/no-unsafe-call": "off",
+      "@typescript-eslint/no-unsafe-argument": "off",
+    },
+  },
+
+  // Unused-vars override (underscore prefix)
   {
     rules: {
       "@typescript-eslint/no-unused-vars": ["error", {
         "varsIgnorePattern": "^_",
         "argsIgnorePattern": "^_",
-        "caughtErrorsIgnorePattern": "^_"
-      }]
-    }
+        "caughtErrorsIgnorePattern": "^_",
+      }],
+    },
   },
 
+  // NestJS modules/controllers are intentionally decorated classes — the
+  // framework's own convention. Disable the no-extraneous-class rule for them
+  // rather than littering every file with disable comments.
+  {
+    files: ["apps/api/src/**/*.module.ts"],
+    rules: {
+      "@typescript-eslint/no-extraneous-class": "off",
+    },
+  },
+
+  // MUST be last: turns off every ESLint rule that fights with Prettier's
+  // formatting, so Prettier owns style and ESLint only owns code quality.
   eslintConfigPrettier,
 );
