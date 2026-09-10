@@ -109,6 +109,15 @@ generated independently by each.
   journey, including token expiry and logout (confirm an expired/cleared
   token is actually rejected, not just that a valid one is accepted).
 
+**Implementation details:**
+
+- **Next.js side** (`apps/web/src/auth.ts`): Auth.js is configured with `strategy: "jwt"` and `secret: AUTH_SECRET`. The JWT callback maps `user.id` → `token.sub`, `user.email` → `token.email`, and `user.name` → `token.name`. This shape must stay in sync with `packages/shared/src/schemas/auth.schema.ts`.
+- **NestJS side** (`apps/api/src/auth/`):
+  - `JwtStrategy` extends `PassportStrategy(PassportJwtStrategy, "jwt")` and extracts JWTs from the `Authorization: Bearer` header.
+  - `validate()` runs the payload through Zod's `AuthJwtPayloadSchema` before returning it.
+  - `JwtAuthGuard` extends `AuthGuard("jwt")` — attach it to any controller or method.
+  - `CurrentUser` decorator resolves the validated payload (or a single field) on `request.user`.
+
 ---
 
 ### 3.2 Payments (Paystack + Stripe)
@@ -303,7 +312,7 @@ change underneath them.
    downstream imports from here.
 2. **`feature/prisma-schema`** — Postgres schema (users, transactions) +
    migrations, with the pooled/unpooled Neon URL split configured.
-3. **`feature/auth-jwt`** — Auth.js (`strategy: "jwt"`) on `apps/web` +
+3. **`feature/auth-jwt`** ✅ Complete (`1f77142`) — Auth.js (`strategy: "jwt"`) on `apps/web` +
    the NestJS guard on `apps/api`, verifying via shared `AUTH_SECRET`.
 
 **Parallel — once the foundation above has merged, these don't block each other and can be split across team members:**

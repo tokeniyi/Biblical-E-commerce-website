@@ -97,6 +97,34 @@ pnpm --filter shared test
 pnpm --filter web test:watch
 ```
 
+### `apps/api` Integration Tests
+
+`apps/api` has a separate Jest config for integration tests that boot the real NestJS app:
+
+```bash
+pnpm --filter api test:integration
+```
+
+**Configuration (`apps/api/test/integration/jest.config.js`):**
+
+- Uses ts-jest transform
+- 30s `testTimeout` (app bootstrap is slow)
+- `setupFiles: ["<rootDir>/test/setup.js"]` loads `.env.test` before any module initializes
+- `passWithNoTests: true` so the package passes if no integration tests exist yet
+
+**Why a separate config?** Integration tests start an HTTP server on an ephemeral port and make real requests. They need different timeouts and should not run on every `pnpm test` (they're slower).
+
+**Jest Setup File Pattern**
+
+If a NestJS module reads `process.env` at import time (e.g. `JwtStrategy` reading `AUTH_SECRET`), add a Jest `setupFiles` entry that loads `.env.test`:
+
+```js
+// apps/api/test/setup.js
+require("dotenv").config({ path: require("path").resolve(__dirname, "../.env.test") });
+```
+
+This ensures env vars exist before any module constructor runs.
+
 ## How to Add a New Test File
 
 ### Vitest packages (apps/web, packages/shared)
@@ -107,9 +135,19 @@ pnpm --filter web test:watch
 
 ### Jest packages (apps/api)
 
-1. Ensure the file matches `testMatch` in `jest.config.js` (e.g. `<rootDir>/src/**/*.spec.ts`)
-2. If the file uses path aliases (`@/`, `@shared/`), Jest's `moduleNameMapper` handles them — no extra config needed
-3. If the test needs environment variables, add them to the package's `.env.test` or mock them in the test file
+#### Unit tests
+
+1. Create a `.spec.ts` file under `apps/api/test/unit/` or `apps/api/src/`
+2. Ensure it matches `testMatch` in `apps/api/test/unit/jest.config.js`
+3. If the file uses path aliases (`@/`, `@shared/`), Jest's `moduleNameMapper` handles them — no extra config needed
+4. If the test needs environment variables, add them to `apps/api/.env.test` or use `test/setup.js`
+
+#### Integration tests
+
+1. Create a `.spec.ts` file under `apps/api/test/integration/`
+2. Use `apps/api/test/integration/jest.config.js` (separate config with longer timeout)
+3. Bootstrap the real NestJS app with `NestFactory.create(AppModule)` and make HTTP requests through the full middleware stack
+4. `test/setup.js` loads `.env.test` automatically
 
 ## CI Behavior
 
