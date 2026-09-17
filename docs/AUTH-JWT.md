@@ -8,6 +8,13 @@
 
 ## What This Feature Implements
 
+Auth.js `5.0.0-beta.32` uses encrypted JWT sessions by default. Because the
+architecture requires NestJS to verify the token independently, this feature
+configures Auth.js with an explicit HS256 JWS encoder/decoder and restricts
+the NestJS Passport strategy to HS256. The CredentialsProvider is limited to
+development/test use because the architecture does not yet define a
+production account provider or password store.
+
 A JWT-based authentication foundation that lets Next.js (`apps/web`) and NestJS (`apps/api`) independently verify the same user session without sharing a process or database session store.
 
 Both apps share a single `AUTH_SECRET`. Next.js signs JWTs via Auth.js (`strategy: "jwt"`), and NestJS verifies them locally using `passport-jwt`.

@@ -7,4 +7,12 @@ if (!AUTH_SECRET) {
 }
 
 export const CORS_ORIGIN = process.env.CORS_ORIGIN ?? "http://localhost:3000";
-export const PORT = parseInt(process.env.PORT ?? "3000", 10);
+export const PORT = parsePort(process.env.PORT ?? "3001");
+
+function parsePort(value: string): number {
+  const port = Number.parseInt(value, 10);
+  if (!Number.isInteger(port) || port < 1 || port > 65535) {
+    throw new Error("PORT must be a valid TCP port");
+  }
+  return port;
+}

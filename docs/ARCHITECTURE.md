@@ -98,6 +98,13 @@ and `apps/api` in every environment (dev, staging, production) — set it
 once per environment and inject it as an env var/secret to both apps, not
 generated independently by each.
 
+**Token contract:** Auth.js v5 encrypts JWT sessions by default for use by
+the issuing app. Because this architecture requires independent NestJS
+verification, `apps/web` must explicitly configure its Auth.js JWT encoder and
+decoder to issue the constrained signed JWS contract consumed by the API.
+The API must restrict verification to the agreed algorithm and validate the
+claims through the shared schema.
+
 **Tests required:**
 - **Unit:** the NestJS guard correctly accepts a validly-signed, unexpired
   JWT and rejects an invalid signature, expired token, or missing token —

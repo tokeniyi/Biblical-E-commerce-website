@@ -3,12 +3,7 @@ import { NestFactory } from "@nestjs/core";
 import { AppModule } from "@/app.module";
 import http from "http";
 import * as jwt from "jsonwebtoken";
-
-const SHARED_SECRET = process.env.AUTH_SECRET as string;
-
-function signJwt(payload: Record<string, unknown>): string {
-  return jwt.sign(payload, SHARED_SECRET) as string;
-}
+import { encodeApiJwt } from "../../../../apps/web/src/auth/jwt-codec";
 
 function request(
   port: number,
@@ -68,7 +63,7 @@ describe("GET /auth/me (integration)", () => {
   });
 
   it("returns 200 with the authenticated user for a validly-signed JWT", async () => {
-    const token = signJwt({
+    const token = encodeApiJwt({
       sub: "3fa85f64-5717-4562-b3fc-2c963f66afa6",
       email: "test@example.com",
       name: "Test User",
@@ -104,7 +99,7 @@ describe("GET /auth/me (integration)", () => {
   });
 
   it("returns 401 for an expired JWT", async () => {
-    const token = signJwt({
+    const token = encodeApiJwt({
       sub: "3fa85f64-5717-4562-b3fc-2c963f66afa6",
       email: "test@example.com",
       name: "Test User",
@@ -119,6 +114,22 @@ describe("GET /auth/me (integration)", () => {
 
   it("returns 401 when no Authorization header is sent", async () => {
     const { status } = await request(port, "/auth/me");
+
+    expect(status).toBe(401);
+  });
+
+  it("returns 401 for a validly-signed token with invalid claims", async () => {
+    const token = jwt.sign(
+      {
+        sub: "not-a-uuid",
+        email: "test@example.com",
+        name: "Test User",
+      },
+      process.env.AUTH_SECRET as string,
+      { algorithm: "HS256", expiresIn: 3600 },
+    );
+
+    const { status } = await request(port, "/auth/me", token);
 
     expect(status).toBe(401);
   });
