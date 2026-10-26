@@ -18,6 +18,9 @@ export const VariantSchema = z.object({
   translation: z.string().min(1),
   binding: z.string().min(1),
   printSize: z.string().min(1),
+  isbn: z.string().min(1),
+  /** Body text size, e.g. 9 for "9 pt standard" (C05 specifications). */
+  fontSizePt: z.number().positive().nullable(),
   priceCents: NonNegativeCentsSchema,
   status: ProductStatusSchema,
   stock: StockSchema,
@@ -38,6 +41,13 @@ export const RatingSummarySchema = z.object({
   ]),
 });
 
+/** C05 "Specifications" panel; null fields are omitted from the page. */
+export const ProductSpecsSchema = z.object({
+  pages: z.number().int().positive().nullable(),
+  trimSize: z.string().nullable(),
+  publisher: z.string().nullable(),
+});
+
 export const ProductSchema = z.object({
   slug: z.string().min(1),
   name: z.string().min(1),
@@ -47,6 +57,9 @@ export const ProductSchema = z.object({
   status: ProductStatusSchema,
   variants: z.array(VariantSchema),
   rating: RatingSummarySchema.nullable(),
+  specs: ProductSpecsSchema,
+  /** Drives the "Newest" sort. */
+  createdAt: z.string().datetime(),
   version: VersionSchema,
 });
 export type Product = z.infer<typeof ProductSchema>;

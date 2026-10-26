@@ -20,6 +20,9 @@ export type ShippingMethodId = keyof typeof SHIPPING_METHODS;
 
 export const STOREFRONT_PAGE_SIZE = 3;
 
+/** C06 shows two reviews per page ("Showing 1–2 of 124 reviews"). */
+export const REVIEWS_PAGE_SIZE = 2;
+
 export const PASSWORD_MIN_LENGTH = 12;
 
 export const RESET_LINK_TTL_MINUTES = 30;

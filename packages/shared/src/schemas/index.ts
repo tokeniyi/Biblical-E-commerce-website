@@ -15,3 +15,5 @@ export * from "./discount.schema";
 export * from "./content.schema";
 export * from "./stock-adjustment.schema";
 export * from "./session.schema";
+export * from "./catalog.schema";
+export * from "./wishlist.schema";
