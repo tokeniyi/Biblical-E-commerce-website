@@ -46,7 +46,7 @@ The eight customer storefront screens (C01–C08) and their six edge states (E02
 ## Checks
 
 - `pnpm lint` ✅ · `pnpm typecheck` ✅ · `pnpm test` ✅ (shared 48, web 111)
-- `pnpm --filter web e2e` ✅: 38 tests (the 16 smoke tests + 22 new storefront tests) against `next build && next start`. Ran three times in a row; all green each time.
+- `pnpm --filter web e2e` ✅: 39 tests (the 16 smoke tests + 23 new storefront tests) against `next build && next start`. Ran three times in a row; all green each time.
   - The new tests cover browse, filter, search, variant, add to cart and saved items.
   - Each edge state is reached through the real flow.
   - The drawer test checks that focus can't reach the page behind it.
@@ -104,7 +104,7 @@ First run `pnpm install`, then `pnpm --filter web dev` and open http://localhost
 
 ## Decisions the spec didn't cover
 
-1. `/categories/bibles` is All Bibles, the URL in the C03 frame. Large print is a category built from a variant property. Family reading and Gift editions are proposed category slugs (see open questions).
+1. `/categories/bibles` is All Bibles, the URL in the C03 frame. Large print is a category built from a variant property and also a C03 checkbox (confirmed: keep both). Family reading = Children's + Devotional, and Gift editions = titles containing "Gift" (confirmed).
 2. With no params, a listing uses the drawn defaults (English, In stock).
    - Removing either chip writes `language=all` or `availability=all`.
    - **Clear all** returns to the defaults and keeps `q`.
@@ -120,7 +120,7 @@ First run `pnpm install`, then `pnpm --filter web dev` and open http://localhost
 6. A product card shows the first variant that matches the active filters, e.g. the paperback when Binding = Paperback.
 7. E16 appears while a filter, sort or page change loads. A first full page load waits for the server instead.
 8. The cart and wishlist reads count as page chrome (like the header), so "fail next read" lands on each page's main data.
-9. **♡ Save when signed in** saves in place, offering **View wishlist** rather than navigating to A12.
+9. **♡ Save when signed in** saves in place, offering **View wishlist** rather than navigating to A12. Coming back from sign-in via `returnTo` shows the server's true state, "♡ Save", because the tap before sign-in saved nothing. Auto-save after sign-in is deferred to Phase 3 (see below).
 10. **Move to cart (C08)** goes to the C07 drawer on that product's page.
 11. An add-to-cart failure shows the server's message inline. E06 is the Phase 2 quote check.
 12. **Product page links:**
@@ -142,19 +142,20 @@ First run `pnpm install`, then `pnpm --filter web dev` and open http://localhost
 
 ## Open questions
 
-1. Family reading and Gift editions have no category in Figma. My proposal:
-   - Family reading = Children's + Devotional.
-   - Gift editions = titles containing "Gift".
-2. C02's "English / Spanish" currently shows all languages. Should it be Spanish only?
-3. Large print is both a C01 tile (category) and a C03 checkbox (facet). Both work today. Keep both?
-4. Please confirm the copy listed in decision 14, and whether Helpful / Report review need behavior.
-5. After signing in from ♡ Save, should the item be saved automatically? That's Phase 3, with A01.
-6. Still open from Phase 0:
+Resolved by the owner: Family reading / Gift editions rules as proposed; keep large print as both tile and checkbox; auto-save after sign-in deferred to Phase 3.
+
+1. C02's "English / Spanish" currently shows all languages. Should it be Spanish only?
+2. Please confirm the copy listed in decision 14, and whether Helpful / Report review need behavior.
+3. Still open from Phase 0:
    - return status order
    - where admin search submits
    - Privacy/Terms pages
    - ESV 4.8 vs 4.71
    - spec §11 questions 1–4
+
+## Deferred to a later phase
+
+- **Auto-save after sign-in (Phase 3, with A01).** Carry the tapped SKU through sign-in, save it server-side, and return to the same page showing "♥ Saved" only once the server confirms. Until then, the return trip shows the true unsaved state, and an E2E test covers that.
 
 ## Issues found outside this PR (not fixed)
 

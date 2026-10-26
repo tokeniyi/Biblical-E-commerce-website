@@ -30,7 +30,14 @@ export function WishlistButton({ sku, productName, signedIn, saved: initiallySav
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  // The server's wishlist is the truth: whenever a fresh render brings a new
+  // value (sign-in redirect, refresh), show that, never a save that didn't happen.
   const [saved, setSaved] = useState(initiallySaved);
+  const [serverSaved, setServerSaved] = useState(initiallySaved);
+  if (initiallySaved !== serverSaved) {
+    setServerSaved(initiallySaved);
+    setSaved(initiallySaved);
+  }
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const query = searchParams.toString();

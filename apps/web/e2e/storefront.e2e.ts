@@ -290,6 +290,25 @@ test.describe("wishlist ♡", () => {
     await expect(page.getByRole("link", { name: "View wishlist" })).toHaveAttribute("href", "/account/wishlist");
   });
 
+  test("after sign-in, returnTo brings the customer back with the heart truly unsaved", async ({ page }) => {
+    // No auto-save on return (that is Phase 3): the tap before sign-in saved nothing,
+    // so the page must not claim it did.
+    await page.goto("/categories/bibles?translation=ESV");
+    await page.getByRole("link", { name: "♡ Save ESV Study Bible (sign in to save)" }).click();
+    await expect(page).toHaveURL("/login?returnTo=%2Fcategories%2Fbibles%3Ftranslation%3DESV");
+
+    // A01 is a Phase 3 stub: sign in through the dev identity endpoint, then follow returnTo.
+    const res = await page.request.post("/api/__dev/identity", { data: { identity: "customer" } });
+    expect(res.status()).toBe(200);
+    const returnTo = new URL(page.url()).searchParams.get("returnTo") ?? "";
+    await page.goto(returnTo);
+
+    await expect(page).toHaveURL("/categories/bibles?translation=ESV");
+    await expect(page.getByRole("button", { name: "♡ Save ESV Study Bible" })).toBeVisible();
+    await expect(page.getByText("♥ Saved")).toHaveCount(0);
+    expect(await (await page.request.get("/api/wishlist")).json()).toEqual({ skus: [] });
+  });
+
   test("an expired session sends the customer to A14 with returnTo", async ({ page }) => {
     await page.goto("/products/esv-study-bible");
     await chooseInToolbar(page, "Identity", "customer");

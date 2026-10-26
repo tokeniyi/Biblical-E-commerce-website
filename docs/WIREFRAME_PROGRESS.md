@@ -32,13 +32,15 @@ Next: Phase 2 (Cart & checkout: O01–O08; E01, E06, E07, E08, E14, E15).
 | C06 product reviews, C08 saved for later | done |
 | E02, E05, E12, E16, E18, E19 in the real flow and in `/__dev/states` | done |
 | Dev: "Load sample cart" (toolbar + `/__dev/screens` form) | done |
-| Unit/integration (shared 48, web 111) + Playwright (38: smoke 16 + storefront 22) | done |
+| Unit/integration (shared 48, web 111) + Playwright (39: smoke 16 + storefront 23) | done |
 
 ### Phase 1 decisions (not covered by the spec)
 
 1. `/categories/bibles` is All Bibles (the Figma C03 URL). Category slugs: `study`, `devotional`,
    `children`, `journaling`, `large-print` (a variant property), plus the C02 collections
-   `family-reading` and `gift-editions` (membership rules proposed, see open questions).
+   `family-reading` (Children's + Devotional) and `gift-editions` (titles containing "Gift"),
+   both confirmed by the owner. Large print stays both a C01 category tile and a C03 facet
+   checkbox (owner: keep both).
 2. Absent listing params mean the drawn defaults (English, In stock). Removing those chips writes
    `language=all` / `availability=all`; "Clear all" returns to the defaults and keeps `q`.
 3. URL formats: `translation=ESV,KJV`, `type=study`, `price=10-40` (whole dollars), `largePrint=true`.
@@ -54,6 +56,9 @@ Next: Phase 2 (Cart & checkout: O01–O08; E01, E06, E07, E08, E14, E15).
    "fail next read" lands on each page's main data (E18).
 9. ♡ Save when signed in saves in place and shows "♥ Saved · View wishlist"; signed out it links
    to `/login?returnTo=…`; an expired session goes to `/login?reason=session-expired&returnTo=…`.
+   Returning via returnTo shows the server's true state: a tap made while signed out saved
+   nothing, so the heart reads "♡ Save" (E2E-tested). The button re-syncs whenever the server
+   value changes, so it never shows a save that didn't happen.
 10. C08 "Move to cart" lands on the C07 drawer on that product's page.
 11. Add-to-cart failures show the server message inline (E06 is the Phase 2 quote check).
 12. Copy not in Figma, kept minimal: review eligibility guidance, "No reviews yet.",
@@ -103,12 +108,8 @@ Next: Phase 2 (Cart & checkout: O01–O08; E01, E06, E07, E08, E14, E15).
 
 Phase 1:
 
-6. Family reading and Gift editions (C02 featured collections) have no category in Figma.
-   Proposed: Family reading = children + devotional; Gift editions = titles containing "Gift".
-7. C02 "English / Spanish" links to all languages (`language=all`). Or should it be Spanish only?
-8. Is large print a category (C01 tile) or a facet (C03 checkbox)? Both work today.
-9. Confirm the invented copy in decision 12, and whether Helpful / Report review need behavior.
-10. After signing in from ♡ Save, should the item be saved automatically (Phase 3)?
+6. C02 "English / Spanish" links to all languages (`language=all`). Or should it be Spanish only?
+7. Confirm the invented copy in decision 12, and whether Helpful / Report review need behavior.
 
 Phase 0:
 
@@ -120,6 +121,15 @@ Phase 0:
 4. ESV rating: spec says 4.8/5 but the histogram (98/19/5/1/1) averages 4.71. Which wins?
 5. Spec §11 questions 1–4 (NGN scope, Figma frame location, moderation/staff screens,
    confirming "proposed" rules) are still open.
+
+## Deferred to later phases (owner decisions)
+
+- **Phase 3: auto-save after sign-in from ♡ Save.** The owner wants it, because the tap is the
+  user's intent. Carry the pending SKU through A01 (e.g. `returnTo` plus a `save=SKU` param, or
+  a short-lived server-side intent), validate it server-side after sign-in, save idempotently,
+  then return to the same page showing "♥ Saved". If the save fails (draft, unknown SKU),
+  return showing "♡ Save" with an explanation. Never show a save the server didn't confirm.
+  Update the "after sign-in, returnTo…" E2E test, which today asserts nothing was saved.
 
 ## Known issues outside this work
 
