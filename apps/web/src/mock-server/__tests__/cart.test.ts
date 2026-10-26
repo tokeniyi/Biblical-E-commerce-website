@@ -40,11 +40,16 @@ describe("add to cart (C05 → C07)", () => {
     ]);
   });
 
-  it("C07 sample: NIV already in the cart, add ESV → 2 items, subtotal $63.00", () => {
-    const cart = loadSampleCart(db, undefined);
+  it("C07: NIV in the cart, add ESV → 2 items, subtotal $63.00", () => {
+    const cart = ensureCart(db, undefined);
+    addToCart(db, cart, { sku: "NIV-EV-PB", quantity: 1 });
     const res = addToCart(db, cart, { sku: "ESV-ST-HC", quantity: 1 });
     expect(res.cart.itemCount).toBe(2);
     expect(res.cart.subtotalCents).toBe(6300);
+  });
+
+  it("the sample cart is the drawn state: Cart (2), $63.00", () => {
+    expect(cartView(db, loadSampleCart(db, undefined))).toMatchObject({ itemCount: 2, subtotalCents: 6300 });
   });
 
   it("merges repeat adds into one line", () => {
@@ -103,7 +108,7 @@ describe("saved for later (C08)", () => {
     const cart = loadSampleCart(db, undefined);
     expect(errorCode(() => moveSavedToCart(db, cart.token, "NLT-CH-HC"))).toBe("out_of_stock");
     expect(cart.saved.map((s) => s.sku)).toEqual(["KJV-LP-LL", "NLT-CH-HC"]);
-    expect(cart.lines.map((l) => l.sku)).toEqual(["NIV-EV-PB"]);
+    expect(cart.lines.map((l) => l.sku)).toEqual(["ESV-ST-HC", "NIV-EV-PB"]);
   });
 
   it("stock that drops after the page loaded is caught on move", () => {
@@ -118,7 +123,7 @@ describe("saved for later (C08)", () => {
     const cart = loadSampleCart(db, undefined);
     const view = removeSaved(db, cart.token, "KJV-LP-LL");
     expect(view.saved.map((s) => s.sku)).toEqual(["NLT-CH-HC"]);
-    expect(view.lines.map((l) => l.sku)).toEqual(["NIV-EV-PB"]);
+    expect(view.lines.map((l) => l.sku)).toEqual(["ESV-ST-HC", "NIV-EV-PB"]);
   });
 
   it("a saved item from another cart is not found", () => {

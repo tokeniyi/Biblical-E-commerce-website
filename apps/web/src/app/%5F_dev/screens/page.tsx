@@ -33,9 +33,19 @@ export default function ScreensPage() {
                   <tr key={s.id} data-testid="screen-row" className="border-t border-band">
                     <td className="p-2 font-mono">{s.id}</td>
                     <td className="p-2">
-                      <Link href={s.href} className="underline">
-                        {s.name}
-                      </Link>
+                      {s.sampleCart ? (
+                        // Loads the drawn cart for this browser, then opens the screen.
+                        <form method="post" action={`/api/__dev/cart/sample?next=${encodeURIComponent(s.href)}`}>
+                          <button type="submit" className="text-left underline">
+                            {s.name}
+                          </button>{" "}
+                          <span className="text-muted">(loads sample cart)</span>
+                        </form>
+                      ) : (
+                        <Link href={s.href} className="underline">
+                          {s.name}
+                        </Link>
+                      )}
                     </td>
                     <td className="p-2 font-mono">{s.route}</td>
                     <td className="p-2">{s.phase}</td>

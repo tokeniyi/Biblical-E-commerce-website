@@ -145,6 +145,10 @@ export function DevToolbar() {
               Approve pending reviews{state ? ` (${String(state.pendingReviews)})` : ""}
             </button>
             <button type="button" className="border border-ink px-2 py-1" disabled={busy}
+              onClick={() => void run(() => api.dev.loadSampleCart(), "Sample cart loaded (C07/C08)")}>
+              Load sample cart
+            </button>
+            <button type="button" className="border border-ink px-2 py-1" disabled={busy}
               onClick={() => void run(() => api.dev.setScenario({ clear: true }), "Scenario cleared")}>
               Clear scenario
             </button>

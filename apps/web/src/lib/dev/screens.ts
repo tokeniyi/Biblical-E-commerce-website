@@ -22,6 +22,8 @@ export type Screen = {
   /** Concrete URL to open, with fixture ids and any scenario preset. */
   href: string;
   phase: number;
+  /** Open it with the drawn sample cart loaded (POST /api/__dev/cart/sample). */
+  sampleCart?: boolean;
 };
 
 const s = (
@@ -37,12 +39,12 @@ const s = (
 export const SCREENS: readonly Screen[] = [
   s("C01", "Home", "16:428", "Customer", "/", "/", 1),
   s("C02", "Category directory", "16:500", "Customer", "/categories", "/categories", 1),
-  s("C03", "Browse Bibles", "16:545", "Customer", "/categories/[slug]", "/categories/study", 1),
+  s("C03", "Browse Bibles", "16:545", "Customer", "/categories/[slug]", "/categories/bibles", 1),
   s("C04", "Search results", "16:611", "Customer", "/search?q=…", "/search?q=bible", 1),
   s("C05", "Product & variant", "16:678", "Customer", "/products/[slug]?variant=SKU", "/products/esv-study-bible?variant=ESV-ST-HC", 1),
   s("C06", "Product reviews", "16:738", "Customer", "/products/[slug]/reviews", "/products/esv-study-bible/reviews", 1),
-  s("C07", "Added to cart", "16:789", "Customer", "/products/[slug]?cart=added", "/products/esv-study-bible?variant=ESV-ST-HC&cart=added", 1),
-  s("C08", "Saved for later", "16:831", "Customer", "/cart/saved", "/cart/saved", 1),
+  { ...s("C07", "Added to cart", "16:789", "Customer", "/products/[slug]?cart=added", "/products/esv-study-bible?variant=ESV-ST-HC&cart=added", 1), sampleCart: true },
+  { ...s("C08", "Saved for later", "16:831", "Customer", "/cart/saved", "/cart/saved", 1), sampleCart: true },
 
   s("O01", "Your cart", "16:873", "Checkout & orders", "/cart", "/cart", 2),
   s("O02", "Checkout identity", "16:923", "Checkout & orders", "/checkout/identity", "/checkout/identity", 2),
@@ -96,6 +98,8 @@ export type EdgeState = {
   trigger: string;
   recovery: string;
   phase: number;
+  /** Where the state appears in the real flow, with its scenario preset. Null until its phase. */
+  href: string | null;
 };
 
 const e = (
@@ -106,28 +110,29 @@ const e = (
   trigger: string,
   recovery: string,
   phase: number,
-): EdgeState => ({ id, name, node, host, trigger, recovery, phase });
+  href: string | null = null,
+): EdgeState => ({ id, name, node, host, trigger, recovery, phase, href });
 
 export const EDGE_STATES: readonly EdgeState[] = [
   e("E01", "Empty cart", "16:2731", "O01", "Last item removed / first visit", "C03, C08", 2),
-  e("E02", "No search results", "16:2745", "C04/C03", "Zero matches", "Clear filters, edit search, C02", 1),
+  e("E02", "No search results", "16:2745", "C04/C03", "Zero matches", "Clear filters, edit search, C02", 1, "/search?q=spanish+study&translation=ESV&binding=Hardcover"),
   e("E03", "Empty wishlist", "16:2759", "A12", "Nothing saved", "C03, A07", 3),
   e("E04", "No orders yet", "16:2771", "A10", "No linked orders", "C01, O09", 3),
-  e("E05", "Product sold out", "16:2784", "C05", "stock = 0", "C03 alternatives; wishlist A12/A01", 1),
+  e("E05", "Product sold out", "16:2784", "C05", "stock = 0", "C03 alternatives; wishlist A12/A01", 1, "/products/nlt-childrens-bible"),
   e("E06", "Cart stock/price changed", "16:2798", "O01→O05", "Server quote differs", "Accept & update → O01; remove item", 2),
   e("E07", "Invalid address", "16:2817", "O03/A09", "Required/ZIP invalid", "Error summary, focus first invalid", 2),
   e("E08", "Promo invalid/expired", "16:2834", "O01", "Bad/expired/ineligible code", "Keep code, totals unchanged", 2),
   e("E09", "Login error", "16:2850", "A01", "Bad credentials", "Generic copy, retain email", 3),
   e("E10", "Reset token expired", "16:2864", "A06", "Expired/used token", "A04, A01", 3),
   e("E11", "Session expired", "16:2876", "A14", "Expired on guarded mutation", "A01 → returnTo (A11)", 3),
-  e("E12", "Variant unavailable", "16:2889", "C05", "Draft/unavailable combo", "Offer valid variant", 1),
+  e("E12", "Variant unavailable", "16:2889", "C05", "Draft/unavailable combo", "Offer valid variant", 1, "/products/esv-study-bible?variant=ESV-ST-LL-LP"),
   e("E13", "Guest verification invalid", "16:2903", "O09", "Wrong/expired code", "Resend, change lookup details", 4),
   e("E14", "Shipping unavailable", "16:2917", "O03/O04", "Unsupported region", "Edit address, back to cart", 2),
   e("E15", "Payment declined/uncertain", "16:2931", "O06/O07", "Known decline or unknown status", "Change method O05 / check status", 2),
-  e("E16", "Loading product grid", "16:2949", "C03/C04", "Fetching", "Keep filters, reserve card geometry", 1),
+  e("E16", "Loading product grid", "16:2949", "C03/C04", "Fetching", "Keep filters, reserve card geometry", 1, "/categories/bibles?scenario=latency:4000"),
   e("E17", "Loading order details", "16:2972", "A11/O10", "Authorized fetch in progress", "Not a status confirmation", 4),
-  e("E18", "Network error", "16:2994", "C04/A11", "Fetch failed", "Retry original route", 1),
-  e("E19", "404", "16:3006", "any", "Unknown slug/route", "C04, C02, C01", 1),
+  e("E18", "Network error", "16:2994", "C04/A11", "Fetch failed", "Retry original route", 1, "/search?q=bible&scenario=network:fail-read"),
+  e("E19", "404", "16:3006", "any", "Unknown slug/route", "C04, C02, C01", 1, "/products/missing"),
   e("E20", "403 admin forbidden", "16:3018", "/admin", "Customer or insufficient role", "B01, C01", 5),
   e("E21", "Cancellation ineligible", "16:3032", "O11", "Shipped before confirm", "O10, O12", 4),
   e("E22", "Refund denied", "16:3044", "O13", "Condition not met", "Retain reason; help link", 4),

@@ -126,12 +126,16 @@ export function removeSaved(db: Db, token: string | undefined, sku: string): Car
 }
 
 /**
- * Dev toolbar "Load sample cart": the state drawn in C07/C08 (NIV in the
- * cart; KJV large print and the sold-out NLT saved for later).
+ * Dev toolbar "Load sample cart": the state drawn across the frames
+ * ("Cart (2)": ESV + NIV, as in C07) with KJV large print and the sold-out
+ * NLT saved for later (C08).
  */
 export function loadSampleCart(db: Db, token: string | undefined): Cart {
   const cart = ensureCart(db, token);
-  cart.lines = [{ sku: "NIV-EV-PB", quantity: 1, unitPriceCents: 2400 }];
+  cart.lines = [
+    { sku: "ESV-ST-HC", quantity: 1, unitPriceCents: 3900 },
+    { sku: "NIV-EV-PB", quantity: 1, unitPriceCents: 2400 },
+  ];
   cart.saved = [{ sku: "KJV-LP-LL" }, { sku: "NLT-CH-HC" }];
   cart.promoCode = null;
   return cart;
