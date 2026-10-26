@@ -17,7 +17,7 @@ test.beforeEach(async ({ page }) => {
 test.describe("app boots and shells render", () => {
   test("home renders the storefront shell", async ({ page }) => {
     await page.goto("/");
-    await expect(page.getByRole("heading", { level: 1, name: "C01 / Home" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: "Home" })).toBeVisible();
     await expect(page.getByRole("link", { name: "BIBLE STORE" })).toBeVisible();
     await expect(page.getByRole("searchbox", { name: "Search Bibles" })).toBeVisible();
     await expect(page.getByRole("link", { name: "Cart (0)" })).toBeVisible();
@@ -57,11 +57,11 @@ test.describe("basic navigation", () => {
     await page.goto("/");
     const primary = page.getByRole("navigation", { name: "Primary" });
     const cases = [
-      { link: "Categories", url: "/categories", heading: "C02 / Category directory" },
-      { link: "Study Bibles", url: "/categories/study", heading: "C03 / Browse Bibles" },
-      { link: "Children", url: "/categories/children", heading: "C03 / Browse Bibles" },
+      { link: "Categories", url: "/categories", heading: "Category directory" },
+      { link: "Study Bibles", url: "/categories/study", heading: "Study Bibles" },
+      { link: "Children", url: "/categories/children", heading: "Children’s Bibles" },
       { link: "Help", url: "/help/shipping-returns", heading: "Help" },
-      { link: "Home", url: "/", heading: "C01 / Home" },
+      { link: "Home", url: "/", heading: "Home" },
     ];
     for (const c of cases) {
       await primary.getByRole("link", { name: c.link, exact: true }).click();
@@ -79,7 +79,7 @@ test.describe("basic navigation", () => {
     await page.getByRole("searchbox", { name: "Search Bibles" }).fill("study bible");
     await page.keyboard.press("Enter");
     await expect(page).toHaveURL("/search?q=study+bible");
-    await expect(page.getByRole("heading", { level: 1, name: "C04 / Search results" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: "Search results" })).toBeVisible();
   });
 
   test("footer help links reach the help route", async ({ page }) => {
@@ -182,17 +182,21 @@ test.describe("dev pages", () => {
     const rows = page.getByTestId("screen-row");
     await expect(rows).toHaveCount(48);
 
+    // Rows that need the sample cart are forms that POST, then redirect to the screen.
     const links = await rows.evaluateAll((trs) =>
       trs.map((tr) => ({
         id: tr.querySelector("td")?.textContent ?? "",
-        href: tr.querySelector("a")?.getAttribute("href") ?? "",
+        href: tr.querySelector("td:nth-child(2) a")?.getAttribute("href") ?? null,
+        form: tr.querySelector("form")?.getAttribute("action") ?? null,
       })),
     );
     expect(new Set(links.map((l) => l.id)).size).toBe(48);
-    for (const { id, href } of links) {
-      const res = await page.request.get(href);
-      expect(res.status(), `${id} ${href}`).toBe(200);
-      expect(await res.text(), `${id} ${href}`).toContain(`${id} / `);
+    for (const { id, href, form } of links) {
+      const target = form ?? href ?? "";
+      const res = form ? await page.request.post(form) : await page.request.get(target);
+      expect(res.status(), `${id} ${target}`).toBe(200);
+      // Built screens carry data-screen; stubs still show "ID / Name".
+      expect(await res.text(), `${id} ${target}`).toMatch(new RegExp(`data-screen="[^"]*\\b${id}\\b|${id} / `));
     }
   });
 
@@ -200,6 +204,15 @@ test.describe("dev pages", () => {
     await page.goto("/__dev/states");
     const ids = await page.getByTestId("state-row").locator("td:first-child").allTextContents();
     expect(ids).toEqual(Array.from({ length: 25 }, (_, i) => `E${String(i + 1).padStart(2, "0")}`));
+    // Phase 1 states render in isolation.
+    await expect(page.getByTestId("rendered-state").locator(":scope > h2")).toHaveText([
+      "E02 / No search results",
+      "E05 / Product sold out",
+      "E12 / Variant unavailable",
+      "E16 / Loading product grid",
+      "E18 / Network error",
+      "E19 / 404",
+    ]);
   });
 
   test("/__dev/inbox shows the empty state on a fresh store", async ({ page }) => {
