@@ -1,0 +1,30 @@
+@import "tailwindcss";
+
+/*
+ * Low-fidelity wireframe palette taken from the Figma frames: grays only,
+ * one accent for focus and one for destructive actions. State is never
+ * conveyed by color alone - always pair it with text or an icon.
+ */
+@theme {
+  --color-ink: #202020;
+  --color-line: #999999;
+  --color-muted: #626262;
+  --color-panel: #f7f7f7;
+  --color-band: #e7e7e7;
+  --color-focus: #1d4ed8;
+  --color-danger: #b91c1c;
+
+  --font-sans: Inter, ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Roboto Mono", ui-monospace, monospace;
+}
+
+@layer base {
+  body {
+    @apply bg-white font-sans text-black antialiased;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+  }
+}

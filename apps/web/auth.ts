@@ -1,6 +1,8 @@
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 
+// Not used by the wireframe build: the mock server owns sessions until the
+// real API lands (docs/WIREFRAME_BUILD_SPEC.md §0, decision 2).
 export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [
     CredentialsProvider({
@@ -9,13 +11,14 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
       },
-      async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
+      authorize(credentials) {
+        const { email, password } = credentials;
+        if (typeof email !== "string" || !email || typeof password !== "string" || !password) {
           return null;
         }
         return {
           id: "00000000-0000-0000-0000-000000000000",
-          email: credentials.email,
+          email,
           name: "Test User",
         };
       },
@@ -25,20 +28,19 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     strategy: "jwt",
   },
   callbacks: {
-    async jwt({ token, user }) {
-      if (user) {
+    jwt({ token, user }) {
+      // `user` is only present on sign-in, despite the non-optional type.
+      if ((user as typeof user | undefined) !== undefined) {
         token.sub = user.id;
         token.email = user.email;
         token.name = user.name ?? null;
       }
       return token;
     },
-    async session({ session, token }) {
-      if (session.user) {
-        session.user.id = token.sub as string;
-        session.user.email = token.email as string;
-        session.user.name = token.name as string | null;
-      }
+    session({ session, token }) {
+      session.user.id = token.sub;
+      session.user.email = token.email;
+      session.user.name = token.name;
       return session;
     },
   },
