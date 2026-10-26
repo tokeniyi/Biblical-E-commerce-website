@@ -27,3 +27,12 @@ export const SessionSchema = z.discriminatedUnion("kind", [
   }),
 ]);
 export type Session = z.infer<typeof SessionSchema>;
+
+/** GET /api/session: who is signed in, plus the header cart count. */
+export const SessionResponseSchema = z.object({
+  session: SessionSchema,
+  /** True when a session existed but has expired (E11 vs plain signed-out). */
+  expired: z.boolean(),
+  cartCount: z.number().int().nonnegative(),
+});
+export type SessionResponse = z.infer<typeof SessionResponseSchema>;

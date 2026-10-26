@@ -13,6 +13,8 @@ export type PaymentStatus = z.infer<typeof PaymentStatusSchema>;
 
 export const FulfillmentStatusSchema = z.enum([
   "unfulfilled",
+  /** Shown as "On hold" for a pending-payment order in Figma B02; not in spec §5.10. */
+  "on_hold",
   "packed",
   "shipped",
   "delivered",
