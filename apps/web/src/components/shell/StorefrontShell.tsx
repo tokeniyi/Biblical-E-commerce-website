@@ -93,10 +93,13 @@ export async function StorefrontShell({ children }: { children: ReactNode }) {
   );
 }
 
-/** Main landmark for a page body inside any shell. */
-export function PageContent({ children }: { children: ReactNode }) {
+/**
+ * Main landmark for a page body inside any shell. `screen` tags the Figma
+ * frame it implements (e.g. "C01"), which /__dev/screens and E2E check.
+ */
+export function PageContent({ children, screen }: { children: ReactNode; screen?: string }) {
   return (
-    <main id="main" className="flex min-w-0 flex-1 flex-col gap-4 p-6">
+    <main id="main" data-screen={screen} className="flex min-w-0 flex-1 flex-col gap-4 p-6">
       {children}
     </main>
   );
