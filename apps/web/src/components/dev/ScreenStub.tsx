@@ -8,7 +8,7 @@ import { figmaNodeUrl, screensById } from "@/lib/dev/screens";
  */
 export function ScreenStub({ ids }: { ids: readonly string[] }) {
   const screens = screensById(ids);
-  const [first] = screens;
+  const first = screens.at(0);
   if (!first) throw new Error(`ScreenStub: unknown screen id(s) ${ids.join(", ")}`);
 
   return (

@@ -79,9 +79,12 @@ export function DevToolbar() {
             {state ? <span className="font-mono">{new Date(state.now).toISOString().slice(0, 16)}Z</span> : null}
           </div>
 
-          <label className="flex flex-col gap-1">
-            <span className="font-semibold">Identity</span>
+          <div className="flex flex-col gap-1">
+            <label htmlFor={`${panelId}-identity`} className="font-semibold">
+              Identity
+            </label>
             <select
+              id={`${panelId}-identity`}
               className="border border-line p-1"
               value={state?.identity ?? "signed-out"}
               disabled={busy || !state}
@@ -99,17 +102,19 @@ export function DevToolbar() {
               ))}
             </select>
             {state?.sessionExpired ? <span>Session: expired</span> : null}
-          </label>
+          </div>
 
           {SCENARIO_KEYS.map((key: ScenarioKey) => {
             const def = SCENARIO_DEFS[key];
+            const id = `${panelId}-${key}`;
             return (
-              <label key={key} className="flex flex-col gap-1">
-                <span className="font-semibold">
+              <div key={key} className="flex flex-col gap-1">
+                <label htmlFor={id} className="font-semibold">
                   {def.label}
                   {def.oneShot ? " (one-shot)" : ""}
-                </span>
+                </label>
                 <select
+                  id={id}
                   className="border border-line p-1"
                   value={state?.scenario[key] ?? DEFAULT_SCENARIO[key]}
                   disabled={busy || !state}
@@ -126,7 +131,7 @@ export function DevToolbar() {
                     </option>
                   ))}
                 </select>
-              </label>
+              </div>
             );
           })}
 
@@ -177,7 +182,9 @@ export function DevToolbar() {
           type="button"
           aria-expanded={open}
           aria-controls={panelId}
-          onClick={() => setOpen((value) => !value)}
+          onClick={() => {
+            setOpen((value) => !value);
+          }}
           className="border border-ink bg-ink px-3 py-1.5 font-semibold text-white"
         >
           Dev tools{active.length > 0 ? ` · ${String(active.length)} active` : ""}

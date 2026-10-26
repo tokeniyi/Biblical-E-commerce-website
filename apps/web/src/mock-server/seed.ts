@@ -295,6 +295,7 @@ export function createSeed(): Db {
     content: content(),
     stockAdjustments: [],
     outbox: [],
+    consumedOneShots: [],
     seq: 1000,
   };
 }

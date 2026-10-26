@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { SAMPLE_NOW, addMinutes } from "../clock";
+import { MockApiError } from "../http";
 import { createSeed } from "../seed";
 import { expireSession, lookupSession, requireSession } from "../services/auth";
 import { approvePendingReviews, identityOfUser, switchIdentity } from "../services/dev";
@@ -33,8 +34,16 @@ describe("mock sessions", () => {
   });
 
   it("distinguishes expired (E11) from signed out (A14) on guarded calls", () => {
-    expect(() => requireSession({ status: "expired" })).toThrow(expect.objectContaining({ code: "session_expired" }));
-    expect(() => requireSession({ status: "none" })).toThrow(expect.objectContaining({ code: "unauthenticated" }));
+    const codeOf = (lookup: Parameters<typeof requireSession>[0]) => {
+      try {
+        requireSession(lookup);
+        return "no error";
+      } catch (error) {
+        return error instanceof MockApiError ? error.code : "wrong error type";
+      }
+    };
+    expect(codeOf({ status: "expired" })).toBe("session_expired");
+    expect(codeOf({ status: "none" })).toBe("unauthenticated");
   });
 
   it("maps a user back to its toolbar identity", () => {

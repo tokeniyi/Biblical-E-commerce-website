@@ -92,36 +92,106 @@ function isOption(key: ScenarioKey, value: string): boolean {
 }
 
 /**
- * Parses `key:value,...`. Unknown keys and invalid values are ignored so a
- * stale cookie can never break a page.
+ * One-shot flags carry a token (`network:fail-read~k3j9x2ab`). The mock
+ * server records consumed tokens in its store, so a flag fires exactly once
+ * even when the consuming request is a server-side fetch whose Set-Cookie
+ * never reaches the browser. Setting the flag again issues a new token.
  */
-export function parseScenario(raw: string | null | undefined, base = DEFAULT_SCENARIO): Scenario {
-  const result: Record<string, string> = { ...base };
-  if (!raw) return result as Scenario;
+export type OneShotTokens = Partial<Record<ScenarioKey, string>>;
+export type ScenarioState = { scenario: Scenario; tokens: OneShotTokens };
+
+type Pair = { key: ScenarioKey; value: string; token: string };
+
+function parsePairs(raw: string | null | undefined): Pair[] {
+  if (!raw) return [];
   let decoded: string;
   try {
     decoded = decodeURIComponent(raw);
   } catch {
-    return result as Scenario;
+    return [];
   }
-  for (const pair of decoded.split(",")) {
-    const [key = "", value = ""] = pair.split(":").map((s) => s.trim());
-    if (isScenarioKey(key) && isOption(key, value)) result[key] = value;
+  const pairs: Pair[] = [];
+  for (const part of decoded.split(",")) {
+    const [key = "", rest = ""] = part.split(":").map((s) => s.trim());
+    const [value = "", token = ""] = rest.split("~");
+    if (isScenarioKey(key) && isOption(key, value)) pairs.push({ key, value, token });
   }
-  return result as Scenario;
+  return pairs;
 }
 
-/** Serializes only the flags that differ from the defaults. */
-export function serializeScenario(scenario: Scenario): string {
+/**
+ * Parses `key:value[~token],...`. Unknown keys and invalid values are ignored
+ * so a stale cookie can never break a page.
+ */
+export function parseScenarioState(raw: string | null | undefined): ScenarioState {
+  const scenario: Record<string, string> = { ...DEFAULT_SCENARIO };
+  const tokens: OneShotTokens = {};
+  for (const { key, value, token } of parsePairs(raw)) {
+    scenario[key] = value;
+    if (SCENARIO_DEFS[key].oneShot) tokens[key] = token;
+  }
+  return { scenario: scenario as Scenario, tokens };
+}
+
+export function parseScenario(raw: string | null | undefined): Scenario {
+  return parseScenarioState(raw).scenario;
+}
+
+export function randomToken(): string {
+  return crypto.randomUUID().slice(0, 8);
+}
+
+/**
+ * Serializes only the flags that differ from the defaults. One-shot flags
+ * without a token get a fresh one.
+ */
+export function serializeScenario(
+  scenario: Scenario,
+  tokens: OneShotTokens = {},
+  newToken: () => string = randomToken,
+): string {
   return SCENARIO_KEYS.filter((key) => scenario[key] !== DEFAULT_SCENARIO[key])
-    .map((key) => `${key}:${scenario[key]}`)
+    .map((key) => {
+      if (!SCENARIO_DEFS[key].oneShot) return `${key}:${scenario[key]}`;
+      return `${key}:${scenario[key]}~${tokens[key] || newToken()}`;
+    })
     .join(",");
 }
 
+/**
+ * Layers explicitly listed flags over the current cookie value. Re-listed
+ * one-shot flags get a new token, so they fire again.
+ */
+export function mergeScenario(
+  cookieValue: string | undefined,
+  patch: Partial<Record<ScenarioKey, string>>,
+  newToken: () => string = randomToken,
+): string {
+  const { scenario, tokens } = parseScenarioState(cookieValue);
+  const next: Record<string, string> = { ...scenario };
+  for (const key of SCENARIO_KEYS) {
+    const value = patch[key];
+    if (value === undefined || !isOption(key, value)) continue;
+    next[key] = value;
+    tokens[key] = "";
+  }
+  return serializeScenario(next as Scenario, tokens, newToken);
+}
+
 /** Applies a `?scenario=` value on top of the current cookie value. */
-export function mergeScenarioParam(cookieValue: string | undefined, param: string): string {
+export function mergeScenarioParam(
+  cookieValue: string | undefined,
+  param: string,
+  newToken: () => string = randomToken,
+): string {
   if (param === "clear") return "";
-  return serializeScenario(parseScenario(param, parseScenario(cookieValue)));
+  const patch = Object.fromEntries(parsePairs(param).map((p) => [p.key, p.value]));
+  return mergeScenario(cookieValue, patch, newToken);
+}
+
+/** Store key for a consumed one-shot flag. */
+export function oneShotId(key: ScenarioKey, value: string, token: string): string {
+  return `${key}:${value}~${token}`;
 }
 
 export function activeFlags(scenario: Scenario): ScenarioKey[] {

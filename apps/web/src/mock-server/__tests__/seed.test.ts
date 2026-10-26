@@ -64,6 +64,19 @@ describe("seed fixtures match the wireframes", () => {
 });
 
 describe("store", () => {
+  it("reseeds a store left behind by older code after hot reload", () => {
+    const stale = createSeed() as Partial<ReturnType<typeof createSeed>>;
+    delete stale.consumedOneShots;
+    (globalThis as { __bibleStoreMockDb?: unknown }).__bibleStoreMockDb = stale;
+    expect(getDb().consumedOneShots).toEqual([]);
+  });
+
+  it("keeps a current store across calls", () => {
+    const db = resetDb();
+    db.outbox.push({ id: "m1", kind: "refund", to: "a@b.c", subject: "s", body: "", link: null, code: null, sentAt: "" });
+    expect(getDb()).toBe(db);
+  });
+
   it("resetDb discards mutations", () => {
     getDb().orders.length = 0;
     expect(resetDb().orders.length).toBeGreaterThan(0);

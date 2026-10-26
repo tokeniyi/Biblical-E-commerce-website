@@ -57,6 +57,30 @@ describe("mergeScenarioParam", () => {
   });
 });
 
+describe("one-shot tokens", () => {
+  const token = () => "tok";
+
+  it("gives a newly set one-shot flag a token", () => {
+    expect(mergeScenarioParam("", "network:fail-read", token)).toBe("network:fail-read~tok");
+  });
+
+  it("keeps existing tokens for flags that are not re-set", () => {
+    expect(mergeScenarioParam("network:fail-read~old", "payment:declined", token)).toBe(
+      "payment:declined,network:fail-read~old",
+    );
+  });
+
+  it("issues a new token when a one-shot flag is re-set", () => {
+    expect(mergeScenarioParam("network:fail-read~old", "network:fail-read", token)).toBe(
+      "network:fail-read~tok",
+    );
+  });
+
+  it("reads the flag value regardless of its token", () => {
+    expect(parseScenario("network:fail-write~abc").network).toBe("fail-write");
+  });
+});
+
 describe("activeFlags", () => {
   it("lists only non-default flags", () => {
     expect(activeFlags(parseScenario("clock:real,promo:expired"))).toEqual(["promo", "clock"]);

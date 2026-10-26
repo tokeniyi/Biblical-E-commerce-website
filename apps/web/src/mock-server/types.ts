@@ -78,6 +78,8 @@ export type Db = {
   content: ContentPage[];
   stockAdjustments: StockAdjustment[];
   outbox: OutboxMessage[];
+  /** One-shot scenario flags already fired (see lib/dev/scenario-defs.ts). */
+  consumedOneShots: string[];
   /** Monotonic counter for generated ids, so ids stay stable across a run. */
   seq: number;
 };

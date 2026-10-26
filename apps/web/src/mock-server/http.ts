@@ -5,6 +5,7 @@ import { NETWORK_FAILURE_HEADER } from "@/lib/api/client";
 import { mockToolsEnabled } from "@/lib/dev/mock-tools";
 import { SCENARIO_COOKIE } from "@/lib/dev/scenario-defs";
 import { ScenarioContext, readScenario } from "./scenarios";
+import { getDb } from "./store";
 
 const STATUS_BY_CODE: Partial<Record<ApiErrorCode, number>> = {
   validation_failed: 422,
@@ -50,6 +51,12 @@ type HandlerOptions = {
    * faults so the toolbar always works.
    */
   dev?: boolean;
+  /**
+   * Page chrome (the header's session/cart-count read). Skips latency and
+   * network faults so "fail next read" lands on the page's own data fetch
+   * instead of being eaten by the header on every render.
+   */
+  chrome?: boolean;
 };
 
 export function readBody(request: NextRequest): Promise<unknown> {
@@ -69,11 +76,13 @@ export function mockHandler(handler: Handler, options: HandlerOptions = {}) {
     if (options.dev && !mockToolsEnabled()) {
       return errorResponse(new MockApiError("not_found", "Not found."));
     }
-    const ctx = new ScenarioContext(readScenario(request));
+    const db = getDb();
+    const ctx = new ScenarioContext(db, readScenario(request, db));
     const { scenario } = ctx;
+    const injectFaults = !options.dev && !options.chrome;
     let response: NextResponse;
 
-    if (!options.dev && scenario.latency !== "0") {
+    if (injectFaults && scenario.latency !== "0") {
       await new Promise((resolve) => setTimeout(resolve, Number(scenario.latency)));
     }
 
@@ -81,7 +90,7 @@ export function mockHandler(handler: Handler, options: HandlerOptions = {}) {
     const failRead = scenario.network === "fail-read" && isRead;
     const failWrite = scenario.network === "fail-write" && !isRead;
 
-    if (!options.dev && (failRead || failWrite)) {
+    if (injectFaults && (failRead || failWrite)) {
       ctx.consume("network");
       response = new NextResponse(null, {
         status: 503,

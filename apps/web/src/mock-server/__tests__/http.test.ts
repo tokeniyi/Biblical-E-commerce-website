@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createApiClient } from "@/lib/api/client";
 import { SCENARIO_COOKIE } from "@/lib/dev/scenario-defs";
 import { MockApiError, mockHandler } from "../http";
+import { resetDb } from "../store";
+
+beforeEach(() => {
+  resetDb();
+});
 
 function request(method: string, scenario = "") {
   return new NextRequest("http://localhost/api/thing", {
@@ -21,10 +26,30 @@ describe("mockHandler", () => {
   });
 
   it("fails the next read once and clears the one-shot flag", async () => {
-    const res = await ok(request("GET", "network:fail-read,payment:declined"));
+    const res = await ok(request("GET", "network:fail-read~t1,payment:declined"));
     expect(res.status).toBe(503);
     // The sticky payment flag survives; the one-shot network flag is consumed.
     expect(res.cookies.get(SCENARIO_COOKIE)?.value).toBe("payment:declined");
+  });
+
+  it("fires a one-shot flag once even if the clearing cookie never reaches the browser", async () => {
+    // Server Components fetch with the browser's cookie; their Set-Cookie is
+    // dropped, so the same stale cookie arrives again on the next request.
+    const stale = "network:fail-read~t2";
+    expect((await ok(request("GET", stale))).status).toBe(503);
+    expect((await ok(request("GET", stale))).status).toBe(200);
+    expect((await ok(request("GET", stale))).status).toBe(200);
+  });
+
+  it("fires again when the flag is re-set with a new token", async () => {
+    expect((await ok(request("GET", "network:fail-read~t3"))).status).toBe(503);
+    expect((await ok(request("GET", "network:fail-read~t4"))).status).toBe(503);
+  });
+
+  it("exempts page chrome from faults so they reach page data", async () => {
+    const chrome = mockHandler(() => NextResponse.json({ ok: true }), { chrome: true });
+    expect((await chrome(request("GET", "network:fail-read~t5"))).status).toBe(200);
+    expect((await ok(request("GET", "network:fail-read~t5"))).status).toBe(503);
   });
 
   it("does not spend fail-write on a read", async () => {
@@ -37,6 +62,18 @@ describe("mockHandler", () => {
     const res = await ok(request("POST", "network:fail-write"));
     expect(res.status).toBe(503);
     expect(res.cookies.get(SCENARIO_COOKIE)?.value).toBe("");
+  });
+
+  it("hides dev endpoints when mock tools are off", async () => {
+    vi.stubEnv("NEXT_PUBLIC_MOCK_TOOLS", "0");
+    try {
+      const dev = mockHandler(() => NextResponse.json({ ok: true }), { dev: true });
+      expect((await dev(request("POST"))).status).toBe(404);
+      // Non-dev handlers are unaffected.
+      expect((await ok(request("GET"))).status).toBe(200);
+    } finally {
+      vi.unstubAllEnvs();
+    }
   });
 
   it("never fails dev endpoints", async () => {
@@ -62,7 +99,7 @@ describe("api client against mock handlers", () => {
       baseUrl: "http://localhost",
       fetch: (input, init) =>
         handler(
-          new NextRequest(String(input), {
+          new NextRequest(input instanceof Request ? input.url : input, {
             ...(init as ConstructorParameters<typeof NextRequest>[1]),
             headers: scenario ? { cookie: `${SCENARIO_COOKIE}=${scenario}` } : {},
           }),

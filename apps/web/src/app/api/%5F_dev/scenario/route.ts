@@ -1,13 +1,16 @@
 import { NextResponse } from "next/server";
 import { ScenarioPatchSchema } from "@/lib/api/dev-schemas";
-import { SCENARIO_COOKIE, serializeScenario, type Scenario } from "@/lib/dev/scenario-defs";
+import { SCENARIO_COOKIE, mergeScenario } from "@/lib/dev/scenario-defs";
 import { MockApiError, mockHandler, readBody } from "@/mock-server/http";
 
 export const POST = mockHandler(
-  async (request, { scenario }) => {
+  async (request) => {
     const parsed = ScenarioPatchSchema.safeParse(await readBody(request));
     if (!parsed.success) throw new MockApiError("validation_failed", "Unknown scenario flag or value.");
-    const next = "clear" in parsed.data ? "" : serializeScenario({ ...scenario, ...parsed.data } as Scenario);
+    const next =
+      "clear" in parsed.data
+        ? ""
+        : mergeScenario(request.cookies.get(SCENARIO_COOKIE)?.value, parsed.data);
     const response = NextResponse.json({ ok: true });
     // Not httpOnly: Playwright and testers may set it directly (spec §7.1).
     response.cookies.set(SCENARIO_COOKIE, next, { path: "/", sameSite: "lax" });

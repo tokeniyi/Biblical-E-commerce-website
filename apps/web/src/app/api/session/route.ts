@@ -6,12 +6,16 @@ import { CART_COOKIE, SESSION_COOKIE, lookupSession, publicSession } from "@/moc
 import { cartCount } from "@/mock-server/services/dev";
 import { getDb } from "@/mock-server/store";
 
-export const GET = mockHandler((request, { scenario }) => {
-  const db = getDb();
-  const lookup = lookupSession(db, request.cookies.get(SESSION_COOKIE)?.value, now(scenario));
-  const body: SessionResponse = {
-    ...publicSession(lookup),
-    cartCount: cartCount(db, request.cookies.get(CART_COOKIE)?.value),
-  };
-  return NextResponse.json(body);
-});
+/** Header chrome on every page, so it is exempt from injected latency/faults. */
+export const GET = mockHandler(
+  (request, { scenario }) => {
+    const db = getDb();
+    const lookup = lookupSession(db, request.cookies.get(SESSION_COOKIE)?.value, now(scenario));
+    const body: SessionResponse = {
+      ...publicSession(lookup),
+      cartCount: cartCount(db, request.cookies.get(CART_COOKIE)?.value),
+    };
+    return NextResponse.json(body);
+  },
+  { chrome: true },
+);
