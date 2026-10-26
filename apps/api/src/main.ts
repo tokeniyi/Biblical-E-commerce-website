@@ -13,4 +13,5 @@ async function bootstrap() {
   await app.listen(PORT);
 }
 
-bootstrap();
+// Explicitly fire-and-forget: an unhandled rejection still crashes the process.
+void bootstrap();
