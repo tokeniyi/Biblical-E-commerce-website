@@ -69,6 +69,7 @@ describe("approvePendingReviews", () => {
     };
     db.reviews.push({ ...base, id: "r1", status: "pending" }, { ...base, id: "r2", status: "rejected" });
     expect(approvePendingReviews(db)).toBe(1);
-    expect(db.reviews.map((r) => r.status)).toEqual(["published", "rejected"]);
+    const added = db.reviews.filter((r) => r.id === "r1" || r.id === "r2");
+    expect(added.map((r) => r.status)).toEqual(["published", "rejected"]);
   });
 });

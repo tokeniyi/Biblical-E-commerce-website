@@ -5,9 +5,21 @@
  */
 import type { z } from "zod";
 import {
+  CartMutationResponseSchema,
+  CartViewSchema,
+  CategoryDirectorySchema,
   ErrorEnvelopeSchema,
+  ListingResponseSchema,
+  ProductDetailSchema,
+  ReviewsResponseSchema,
   SessionResponseSchema,
+  WishlistSchema,
+  listingQueryToParams,
+  reviewsQueryToParams,
+  type AddToCartInput,
   type ApiErrorCode,
+  type ListingQuery,
+  type ReviewsQuery,
 } from "@your-app/shared";
 import {
   ApprovedSchema,
@@ -99,6 +111,38 @@ export function createApiClient(options: ApiClientOptions = {}) {
     getSession: () => request("/api/session", SessionResponseSchema),
     signOut: () => request("/api/session/logout", OkSchema, { method: "POST" }),
 
+    catalog: {
+      /** C03 with a category slug; C04 search with `category: null`. */
+      listProducts: (category: string | null, query: ListingQuery) => {
+        const params = listingQueryToParams(query);
+        if (category !== null) params.set("category", category);
+        return request(`/api/catalog/products?${params.toString()}`, ListingResponseSchema);
+      },
+      getCategories: () => request("/api/catalog/categories", CategoryDirectorySchema),
+      getProduct: (slug: string) =>
+        request(`/api/catalog/products/${encodeURIComponent(slug)}`, ProductDetailSchema),
+      getReviews: (slug: string, query: ReviewsQuery) =>
+        request(
+          `/api/catalog/products/${encodeURIComponent(slug)}/reviews?${reviewsQueryToParams(query).toString()}`,
+          ReviewsResponseSchema,
+        ),
+    },
+
+    cart: {
+      get: () => request("/api/cart", CartViewSchema),
+      addLine: (input: AddToCartInput) =>
+        request("/api/cart/lines", CartMutationResponseSchema, { method: "POST", body: input }),
+      moveSavedToCart: (sku: string) =>
+        request(`/api/cart/saved/${encodeURIComponent(sku)}/move`, CartMutationResponseSchema, { method: "POST" }),
+      removeSaved: (sku: string) =>
+        request(`/api/cart/saved/${encodeURIComponent(sku)}`, CartViewSchema, { method: "DELETE" }),
+    },
+
+    wishlist: {
+      get: () => request("/api/wishlist", WishlistSchema),
+      add: (sku: string) => request("/api/wishlist", WishlistSchema, { method: "POST", body: { sku } }),
+    },
+
     dev: {
       getState: () => request("/api/__dev/state", DevStateSchema),
       setScenario: (patch: Partial<Scenario> | { clear: true }) =>
@@ -109,6 +153,7 @@ export function createApiClient(options: ApiClientOptions = {}) {
       reset: () => request("/api/__dev/reset", OkSchema, { method: "POST" }),
       approveReviews: () => request("/api/__dev/reviews/approve", ApprovedSchema, { method: "POST" }),
       getInbox: () => request("/api/__dev/inbox", InboxSchema),
+      loadSampleCart: () => request("/api/__dev/cart/sample", OkSchema, { method: "POST" }),
     },
   };
 }

@@ -65,14 +65,22 @@ export function readBody(request: NextRequest): Promise<unknown> {
   });
 }
 
-type Handler = (request: NextRequest, ctx: ScenarioContext) => Promise<NextResponse> | NextResponse;
+type RouteParams = Record<string, string>;
+/** Next passes dynamic segments as a promise in the second handler argument. */
+type RouteContext = { params: Promise<RouteParams> };
+
+type Handler = (
+  request: NextRequest,
+  ctx: ScenarioContext,
+  params: RouteParams,
+) => Promise<NextResponse> | NextResponse;
 
 /**
  * Wraps a route handler with scenario behavior: simulated latency, one-shot
  * network faults, the error envelope, and clearing consumed one-shot flags.
  */
 export function mockHandler(handler: Handler, options: HandlerOptions = {}) {
-  return async (request: NextRequest): Promise<NextResponse> => {
+  return async (request: NextRequest, route?: RouteContext): Promise<NextResponse> => {
     if (options.dev && !mockToolsEnabled()) {
       return errorResponse(new MockApiError("not_found", "Not found."));
     }
@@ -98,7 +106,7 @@ export function mockHandler(handler: Handler, options: HandlerOptions = {}) {
       });
     } else {
       try {
-        response = await handler(request, ctx);
+        response = await handler(request, ctx, (await route?.params) ?? {});
       } catch (error) {
         if (!(error instanceof MockApiError)) throw error;
         response = errorResponse(error);

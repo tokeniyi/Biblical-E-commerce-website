@@ -104,7 +104,7 @@ export function listingQueryToParams(query: ListingQuery): URLSearchParams {
   if (query.language !== d.language) params.set("language", query.language);
   if (query.binding) params.set("binding", query.binding);
   if (query.priceMin !== null || query.priceMax !== null) {
-    params.set("price", `${query.priceMin ?? ""}-${query.priceMax ?? ""}`);
+    params.set("price", `${String(query.priceMin ?? "")}-${String(query.priceMax ?? "")}`);
   }
   if (query.availability !== d.availability) params.set("availability", query.availability);
   if (query.largePrint) params.set("largePrint", "true");
@@ -233,3 +233,18 @@ export const ReviewsResponseSchema = z.object({
   eligibility: ReviewEligibilitySchema,
 });
 export type ReviewsResponse = z.infer<typeof ReviewsResponseSchema>;
+
+/** "Standard print" reads as "Standard" in selects and summaries (C05, C07). */
+export function shortPrintSize(printSize: string): string {
+  return printSize === "Standard print" ? "Standard" : printSize;
+}
+
+/** "Hardcover / Standard", as in the C07 drawer and C06 review lines. */
+export function variantShortLabel(variant: { binding: string; printSize: string }): string {
+  return `${variant.binding} / ${shortPrintSize(variant.printSize)}`;
+}
+
+/** "ESV · Hardcover · Standard print", as on product cards. */
+export function variantLongLabel(variant: { translation: string; binding: string; printSize: string }): string {
+  return `${variant.translation} · ${variant.binding} · ${variant.printSize}`;
+}

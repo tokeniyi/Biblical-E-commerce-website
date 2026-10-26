@@ -59,3 +59,17 @@ export function requireSession(lookup: SessionLookup) {
   if (lookup.status === "none") throw new MockApiError("unauthenticated", "Sign in to continue.");
   return lookup.session;
 }
+
+type CookieReader = { cookies: { get(name: string): { value: string } | undefined } };
+
+/** The session behind this request's cookie, at the mock clock's "now". */
+export function viewerOf(db: Db, request: CookieReader, at: Date): SessionLookup {
+  return lookupSession(db, request.cookies.get(SESSION_COOKIE)?.value, at);
+}
+
+/** Customer-only actions (wishlist, reviews): staff sessions are not customers. */
+export function requireCustomer(lookup: SessionLookup) {
+  const session = requireSession(lookup);
+  if (session.kind !== "customer") throw new MockApiError("unauthenticated", "Sign in with a customer account.");
+  return session;
+}
