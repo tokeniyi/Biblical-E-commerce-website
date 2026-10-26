@@ -8,17 +8,23 @@
     "start": "next start",
     "lint": "eslint . --max-warnings 0",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "e2e": "playwright test"
   },
   "dependencies": {
+    "@tailwindcss/postcss": "^4.3.3",
     "@your-app/shared": "workspace:*",
     "next": "16.3.4",
     "next-auth": "5.0.0-beta.32",
+    "postcss": "^8.5.31",
     "react": "19.1.0",
-    "react-dom": "19.1.0"
+    "react-dom": "19.1.0",
+    "tailwindcss": "^4.3.3",
+    "zod": "^3.23.0"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.64.1",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.7",
     "eslint": "^10.10.0",

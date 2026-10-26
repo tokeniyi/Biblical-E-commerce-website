@@ -1,12 +1,11 @@
-import { Test, TestingModule } from "@nestjs/testing";
+import jwt from "jsonwebtoken";
 import { JwtAuthGuard } from "@/auth/jwt-auth.guard";
 import { ExecutionContext } from "@nestjs/common";
 
 describe("JwtAuthGuard", () => {
   let guard: JwtAuthGuard;
 
-  beforeEach(async () => {
-    const moduleRef = await Test.createTestingModule({}).compile();
+  beforeEach(() => {
     guard = new JwtAuthGuard();
   });
 
@@ -36,7 +35,6 @@ describe("JwtAuthGuard", () => {
   });
 
   it("accepts a validly-signed, unexpired JWT", async () => {
-    const jwt = require("jsonwebtoken");
     const secret = process.env.AUTH_SECRET || "test-secret-for-unit-tests-only";
 
     const payload = {
@@ -55,7 +53,6 @@ describe("JwtAuthGuard", () => {
   });
 
   it("rejects a JWT signed with the wrong secret", async () => {
-    const jwt = require("jsonwebtoken");
 
     const payload = {
       sub: "3fa85f64-5717-4562-b3fc-2c963f66afa6",
@@ -72,7 +69,6 @@ describe("JwtAuthGuard", () => {
   });
 
   it("rejects an expired JWT", async () => {
-    const jwt = require("jsonwebtoken");
     const secret = process.env.AUTH_SECRET || "test-secret-for-unit-tests-only";
 
     const payload = {
@@ -90,7 +86,6 @@ describe("JwtAuthGuard", () => {
   });
 
   it("rejects a payload missing required fields", async () => {
-    const jwt = require("jsonwebtoken");
     const secret = process.env.AUTH_SECRET || "test-secret-for-unit-tests-only";
 
     const payload = {
