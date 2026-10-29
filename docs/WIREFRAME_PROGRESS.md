@@ -5,7 +5,8 @@ Read this first, then the spec.
 
 ## Workflow (from the owner)
 
-- One phase at a time, in spec §9 order. Branch `feat/wireframes-phase-N-<name>`, small commits.
+- One phase at a time, in spec §9 order. Branch `feat/wireframes-phase-N-<name>`, small commits
+  (cloud sessions that are assigned a branch, e.g. `claude/…`, use that branch instead).
 - **PR base is `main`** from Phase 2 on (Phase 0 went to `claude-code-frontend`).
 - Before a PR: `pnpm lint`, `pnpm typecheck`, `pnpm test`, and `pnpm --filter web e2e`, all green.
 - `gh` is not installed: push, then give the owner the compare link and the PR body
@@ -15,26 +16,42 @@ Read this first, then the spec.
 - A passing test only counts if it exercises the behavior (owner's rule). Verify in the
   browser too.
 
-## Current phase: 2 — Cart & checkout (PR open, awaiting review)
+## Current phase: 3 — Auth & account (PR open, awaiting review)
 
-Phase 1 merged into `main` (PR #16). **From Phase 2 on, PR base is `main`** (owner, 26 Oct 2026);
-`claude-code-frontend` stops at Phase 0.
-Branch: `feat/wireframes-phase-2-checkout` → PR into `main`. PR body: `docs/pr/phase-2.md`.
-Next: Phase 3 (Auth & account: A01–A14; Dev Inbox flows; E03, E04, E09, E10, E11).
+Phase 2 merged into `main` (PR #17). Branch: `claude/laughing-clarke-g19j49` (session-assigned) → PR into
+`main`. PR body: `docs/pr/phase-3.md`.
+Next: Phase 4 (Post-purchase: O09–O13; E13, E17, E21, E22).
 
 | Item | Status |
 |---|---|
-| Shared `checkout.schema.ts`; E07 address copy; `shippingEstimate()` | done |
-| Mock: `pricing.ts` (pure quote math), `checkout.ts` (promo, E06, delivery, rates, intents, orders, O08 access) | done |
-| O01–O08 with CheckoutStepper, OrderSummary, AddressForm/Field/ErrorSummary | done |
-| E01, E06, E07, E08, E14, E15 in the real flow and in `/__dev/states` | done |
-| Dev: quote drift one-shot; `/__dev/screens` O04–O08 stage presets; dev state order/intent counts | done |
-| Unit (web 139, shared 48) + Playwright (53: smoke 16 + storefront 23 + checkout 14) | done |
+| Shared `account.schema.ts`, `safeReturnTo()` / `loginPath()`, `formatDayMonth()`, cart `mergeConflicts` | done |
+| Mock: `identity.ts` (A01–A06), `account.ts` (A07–A09, A12), `orders.ts` (A10/A11, snapshot, reorder), `reviews.ts` (A13), sign-in cart merge | done |
+| A01–A14 screens; A14 = `/login?reason=session-expired\|auth-required\|signed-out` | done |
+| E03, E04, E09, E10, E11 in the real flow and in `/__dev/states` | done |
+| ♡ auto-save after sign-in (`save=SKU` through A01 / A02 → A03) | done |
+| Dev: `POST /api/__dev/as` identity/prep presets; `/__dev/screens` A01–A13 presets | done |
+| Unit (web 178, shared 71) + Playwright (76: smoke 16 + storefront 23 + checkout 14 + account 23) | done |
 
-### Phase 2 decisions (not covered by the spec)
+### Phase 3 decisions (not covered by the spec)
 
-See `docs/pr/phase-2.md` ("Decisions the spec didn't cover") for the full list. The ones that
+See `docs/pr/phase-3.md` ("Decisions the spec didn't cover") for the full list. The ones that
 affect later phases:
+
+1. Account pages call `requireCustomerPage(returnTo)` and read through `loadAccountData()`
+   (`lib/api/account.ts`): E11 / A14 redirects, 404 for not-found (including someone else's), null for E18.
+   Client mutations use `signInRedirect()` (`lib/auth-redirect.ts`).
+2. Sign-up does not sign in; the emailed verification link does (non-enumerating A02). Verifying an
+   email links guest orders placed with it (open question: keep automatic, or explicit in O09?).
+3. `withSnapshot()` (`mock-server/services/orders.ts`) applies the "Order BS-10428 snapshot" toolbar to
+   reads without mutating the order; delivered snapshot = 12 Oct (return deadline 11 Nov). Use it in O10–O13.
+4. `customerOrderDetail().canCancel / canReturn` hold the A11 rules (cancel: processing + paid; return:
+   delivered within 30 days). O11/O12 must recheck them on submit.
+5. Rate limits and resend cooldowns run on real time (`db.throttle`), not the frozen mock clock. O09's
+   60 s resend cooldown should reuse `takeCooldown`.
+6. Dates use `formatDayMonth()` from shared (ICU en-GB writes "Sept").
+7. Customer carts carry `customerId`; sign-in merges into the account cart (`mergeCartOnSignIn`).
+
+### Phase 2 decisions that still matter
 
 1. New orders continue from BS-10429; the guest order session is the paying browser's cart
    token for 60 minutes (O09 in Phase 4 adds the email-code path).
@@ -42,7 +59,7 @@ affect later phases:
 3. Quote drift is one-shot and mutates the catalog (stock/price), so E06 persists until accepted.
 4. Checkout controls are disabled until hydration (`useHydrated`): pre-hydration native submits
    would put addresses or card numbers in the URL. Use it for any new form that posts data.
-5. The O03 "Save this address" option writes to the customer's address book (A09, Phase 3).
+5. The O03 "Save this address" option writes to the customer's address book (A09).
 
 ## How the mock tooling works (read before each phase)
 
@@ -83,6 +100,13 @@ affect later phases:
 
 ## Open questions (for the owner)
 
+Phase 3:
+
+10. Confirm the copy listed in `docs/pr/phase-3.md` ("Copy not in Figma").
+11. Sign-up signs in only after email verification (non-enumerating). Keep, or sign in immediately?
+12. Verifying an email links guest orders with that address automatically. Keep, or make it explicit (O09)?
+13. Lockout: 5 failed sign-ins per email per 15 minutes? Verification links: 24 hours?
+
 Phase 2:
 
 8. Confirm the copy listed in `docs/pr/phase-2.md` ("Copy not in Figma").
@@ -106,12 +130,7 @@ Phase 0:
 
 ## Deferred to later phases (owner decisions)
 
-- **Phase 3: auto-save after sign-in from ♡ Save.** The owner wants it, because the tap is the
-  user's intent. Carry the pending SKU through A01 (e.g. `returnTo` plus a `save=SKU` param, or
-  a short-lived server-side intent), validate it server-side after sign-in, save idempotently,
-  then return to the same page showing "♥ Saved". If the save fails (draft, unknown SKU),
-  return showing "♡ Save" with an explanation. Never show a save the server didn't confirm.
-  Update the "after sign-in, returnTo…" E2E test, which today asserts nothing was saved.
+- None open. (Phase 3 delivered the ♡ auto-save after sign-in.)
 
 ## Known issues outside this work
 
@@ -119,6 +138,7 @@ Phase 0:
   `test/unit/`, so CI never runs it. Force-run: 5 pass, 1 fails
   ("accepts a validly-signed JWT": mock context lacks `getResponse`). Not fixed here.
 - `apps/web/tsconfig.tsbuildinfo` is tracked and rewritten by every typecheck.
+- A13's write route sits under `/account/orders/…`, so the sidebar highlights Orders, not Reviews.
 - Cloud sessions: the preinstalled Chromium doesn't match the pinned `@playwright/test`. Run E2E
   with a throwaway config that sets `launchOptions.executablePath` to
   `/opt/pw-browsers/chromium-1243/chrome-linux64/chrome` (not committed).
