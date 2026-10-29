@@ -1,5 +1,6 @@
 import Link from "next/link";
-import type { ReactNode } from "react";
+import { Suspense, type ReactNode } from "react";
+import { WishlistNotice } from "@/components/account/WishlistNotice";
 import { serverApi } from "@/lib/api/server";
 import { NavLink } from "./NavLink";
 import { SiteFooter } from "./SiteFooter";
@@ -87,6 +88,9 @@ export async function StorefrontShell({ children }: { children: ReactNode }) {
           </ul>
         </nav>
       </header>
+      <Suspense fallback={null}>
+        <WishlistNotice />
+      </Suspense>
       <div className="flex flex-1 flex-col md:flex-row">{children}</div>
       <SiteFooter />
     </div>

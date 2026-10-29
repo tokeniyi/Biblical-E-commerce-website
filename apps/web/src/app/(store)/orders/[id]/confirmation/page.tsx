@@ -110,7 +110,7 @@ export default async function OrderConfirmationPage({ params }: Props) {
                 Optional: create an account with your verified order email to see this purchase in your order history.
               </p>
               <p className="flex flex-wrap gap-2 text-sm">
-                <Link href="/register" className="underline">
+                <Link href={`/register?order=${encodeURIComponent(order.id)}`} className="underline">
                   Create account
                 </Link>
                 <span aria-hidden="true">·</span>

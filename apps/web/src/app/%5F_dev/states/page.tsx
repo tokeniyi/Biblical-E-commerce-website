@@ -13,7 +13,10 @@ import { ListingProvider } from "@/components/storefront/listing/ListingContext"
 import { NoResults } from "@/components/storefront/listing/ListingControls";
 import { SoldOutNotice, VariantUnavailableNotice } from "@/components/storefront/product/VariantNotices";
 import { primaryButton, textLink } from "@/components/ui/styles";
-import { EDGE_STATES, figmaNodeUrl } from "@/lib/dev/screens";
+import { EmptyWishlist, NoOrders } from "@/components/account/EmptyStates";
+import { ResetLinkInvalid } from "@/components/account/auth/PasswordReset";
+import { StatusMessage } from "@/components/ui/StatusMessage";
+import { EDGE_STATES, figmaNodeUrl, presetAction } from "@/lib/dev/screens";
 
 /**
  * Fixture renders of each implemented state, matching its Figma frame.
@@ -80,6 +83,45 @@ const RENDERED: Record<string, ReactNode> = {
     </div>
   ),
   E14: <ShippingUnavailable />,
+  E03: <EmptyWishlist />,
+  E04: <NoOrders />,
+  E09: (
+    <div className="flex flex-col gap-3.5">
+      <StatusMessage role="alert" title="Email or password is incorrect" className="border-2 border-danger">
+        Check your details and try again. Your cart is still saved.
+      </StatusMessage>
+      <Field id="e09-email" label="Email" required>
+        <input {...controlProps("e09-email", undefined)} type="email" className={inputClass} defaultValue="jordan@example.com" />
+      </Field>
+      <div className="flex flex-wrap items-center gap-3">
+        <Link href="/login" className={primaryButton}>
+          Try again
+        </Link>
+        <Link href="/password/forgot" className={textLink}>
+          Reset password
+        </Link>
+      </div>
+    </div>
+  ),
+  E10: <ResetLinkInvalid copy="E10" />,
+  E11: (
+    <div className="flex flex-col gap-3.5">
+      <StatusMessage role="alert" title="Please sign in again">
+        Your session expired while viewing order BS-10428. No change was submitted.
+      </StatusMessage>
+      <p className="text-base">
+        Return after login: <span className="font-mono">/account/orders/BS-10428</span>
+      </p>
+      <div className="flex flex-wrap items-center gap-3">
+        <Link href="/login?returnTo=%2Faccount%2Forders%2FBS-10428" className={primaryButton}>
+          Sign in
+        </Link>
+        <Link href="/" className={textLink}>
+          Keep shopping
+        </Link>
+      </div>
+    </div>
+  ),
   E15: (
     <div className="flex flex-col gap-4 sm:flex-row">
       <div className="flex-1">
@@ -171,7 +213,13 @@ export default function StatesPage() {
                 <td className="p-2">{state.recovery}</td>
                 <td className="p-2">{state.phase}</td>
                 <td className="p-2">
-                  {state.href ? (
+                  {state.href && state.preset ? (
+                    <form method="post" action={presetAction(state.href, state.preset)}>
+                      <button type="submit" className="underline" aria-label={`Open ${state.id} in flow`}>
+                        Open in flow
+                      </button>
+                    </form>
+                  ) : state.href ? (
                     <Link href={state.href} className="underline" aria-label={`Open ${state.id} in flow`}>
                       Open in flow
                     </Link>

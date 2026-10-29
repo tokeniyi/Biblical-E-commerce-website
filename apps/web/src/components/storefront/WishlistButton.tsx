@@ -15,16 +15,19 @@ type WishlistButtonProps = {
   label?: string;
 };
 
-function loginHref(returnTo: string, reason?: "session-expired"): string {
+/** A01 with returnTo; signed out, the SKU rides along so sign-in can save it. */
+function loginHref(returnTo: string, options: { reason?: "session-expired"; save?: string } = {}): string {
   const params = new URLSearchParams({ returnTo });
-  if (reason) params.set("reason", reason);
+  if (options.reason) params.set("reason", options.reason);
+  if (options.save) params.set("save", options.save);
   return `/login?${params.toString()}`;
 }
 
 /**
  * ♡ Save → A12 / A01. Signed out it links to sign in with returnTo set to
- * this page (C01: "Wishlist requires A01, with returnTo preserved").
- * Signed in it saves the SKU (idempotent) and offers the wishlist.
+ * this page (C01: "Wishlist requires A01, with returnTo preserved") and the
+ * SKU, which sign-in saves (the tap is the intent), so the customer comes
+ * back to "♥ Saved". Signed in it saves the SKU (idempotent).
  */
 export function WishlistButton({ sku, productName, signedIn, saved: initiallySaved, label = "♡ Save" }: WishlistButtonProps) {
   const router = useRouter();
@@ -45,7 +48,7 @@ export function WishlistButton({ sku, productName, signedIn, saved: initiallySav
 
   if (!signedIn) {
     return (
-      <Link href={loginHref(returnTo)} className={textLink} aria-label={`${label} ${productName} (sign in to save)`}>
+      <Link href={loginHref(returnTo, { save: sku })} className={textLink} aria-label={`${label} ${productName} (sign in to save)`}>
         {label}
       </Link>
     );
@@ -72,9 +75,9 @@ export function WishlistButton({ sku, productName, signedIn, saved: initiallySav
       setSaved(true);
     } catch (e) {
       if (e instanceof ApiError && e.code === "session_expired") {
-        router.push(loginHref(returnTo, "session-expired"));
+        router.push(loginHref(returnTo, { reason: "session-expired", save: sku }));
       } else if (e instanceof ApiError && e.code === "unauthenticated") {
-        router.push(loginHref(returnTo));
+        router.push(loginHref(returnTo, { save: sku }));
       } else {
         setError(e instanceof ApiError ? e.message : "Couldn’t save. Try again.");
       }

@@ -16,7 +16,7 @@ type Props = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
-const EMPTY_CART: CartView = { lines: [], saved: [], itemCount: 0, subtotalCents: 0 };
+const EMPTY_CART: CartView = { lines: [], saved: [], itemCount: 0, subtotalCents: 0, mergeConflicts: [] };
 
 async function loadProduct(slug: string): Promise<ProductDetail | null> {
   try {

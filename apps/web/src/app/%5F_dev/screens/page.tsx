@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { SCREENS, figmaNodeUrl, type ScreenGroup } from "@/lib/dev/screens";
+import { SCREENS, figmaNodeUrl, presetAction, type ScreenGroup } from "@/lib/dev/screens";
 
 const GROUPS: ScreenGroup[] = ["Customer", "Checkout & orders", "Account", "Admin"];
 
@@ -44,6 +44,16 @@ export default function ScreensPage() {
                           </button>{" "}
                           <span className="text-muted">
                             {s.sampleCart === true ? "(loads sample cart)" : `(sample cart → ${s.sampleCart})`}
+                          </span>
+                        </form>
+                      ) : s.preset ? (
+                        // Signs in as the preset identity (or prepares a link), then opens the screen.
+                        <form method="post" action={presetAction(s.href, s.preset)}>
+                          <button type="submit" className="text-left underline">
+                            {s.name}
+                          </button>{" "}
+                          <span className="text-muted">
+                            ({[s.preset.identity ? `as ${s.preset.identity}` : null, s.preset.prep].filter(Boolean).join(", ")})
                           </span>
                         </form>
                       ) : (

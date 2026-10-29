@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
-import { TAX_RATE_BPS, formatCents, type CartLineView, type CheckoutView } from "@your-app/shared";
+import { TAX_RATE_BPS, formatCents, type CartLineView, type CheckoutView, type MergeConflict } from "@your-app/shared";
 import { firstErrors } from "@/components/forms/AddressForm";
 import { Dialog } from "@/components/ui/Dialog";
 import { StatusMessage } from "@/components/ui/StatusMessage";
@@ -12,6 +12,7 @@ import { ApiError, api } from "@/lib/api/client";
 import { useHydrated } from "@/lib/use-hydrated";
 import { CartChanges } from "./CartChanges";
 import { EmptyCart } from "./EdgeStates";
+import { MergeConflicts } from "./MergeConflicts";
 import { OrderSummary } from "./OrderSummary";
 
 const stepButton = "inline-flex h-8 w-8 items-center justify-center border border-ink bg-white disabled:border-line disabled:text-muted";
@@ -86,6 +87,19 @@ export function CartEditor({ initial }: { initial: CheckoutView }) {
     }
   }
 
+  async function resolveMerge(conflict: MergeConflict, use: "kept" | "account") {
+    setBusySku(conflict.sku);
+    setRowError(null);
+    const quantity = use === "kept" ? conflict.keptQuantity : conflict.accountQuantity;
+    try {
+      applyView(await api.cart.resolveMerge({ sku: conflict.sku, use }), `${conflict.productName}: quantity ${String(quantity)}.`);
+    } catch (e) {
+      setRowError({ sku: conflict.sku, message: e instanceof ApiError ? e.message : "Something went wrong. Try again." });
+    } finally {
+      setBusySku(null);
+    }
+  }
+
   async function applyPromo() {
     setPromoBusy(true);
     setPromoError(null);
@@ -123,6 +137,13 @@ export function CartEditor({ initial }: { initial: CheckoutView }) {
         <div className="flex flex-col gap-4 md:flex-row md:items-start">
           <div className="flex min-w-0 flex-1 flex-col gap-4">
             {blocked && reconciledQuote ? <CartChanges changes={changes} reconciled={reconciledQuote} /> : null}
+            {cart.mergeConflicts.length > 0 ? (
+              <MergeConflicts
+                conflicts={cart.mergeConflicts}
+                disabled={!hydrated || busySku !== null}
+                onChoose={(conflict, use) => void resolveMerge(conflict, use)}
+              />
+            ) : null}
 
             <div className="overflow-x-auto border border-line">
               <table className="w-full min-w-[640px] text-left font-mono text-[13px] leading-snug">
