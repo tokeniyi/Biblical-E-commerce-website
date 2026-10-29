@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { formatCents, type OrderConfirmation } from "@your-app/shared";
+import { formatCents, formatDayMonth, type OrderConfirmation } from "@your-app/shared";
 import { DeliveryPanel } from "@/components/checkout/DeliveryDetails";
 import { OrderSummary } from "@/components/checkout/OrderSummary";
 import { PageContent } from "@/components/shell/StorefrontShell";
@@ -12,7 +12,6 @@ import { serverApi } from "@/lib/api/server";
 
 type Props = { params: Promise<{ id: string }> };
 
-const PLACED = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
 
 async function load(id: string): Promise<OrderConfirmation | null> {
   try {
@@ -56,7 +55,7 @@ export default async function OrderConfirmationPage({ params }: Props) {
         ))}
       </ol>
       <StatusMessage role="status" title="✓ Thank you — payment confirmed">
-        Order {order.id} · Placed {PLACED.format(new Date(order.placedAt))} · {formatCents(order.totals.totalCents)} paid. Receipt
+        Order {order.id} · Placed {formatDayMonth(new Date(order.placedAt), { year: true })} · {formatCents(order.totals.totalCents)} paid. Receipt
         sent to {order.email}.
       </StatusMessage>
 

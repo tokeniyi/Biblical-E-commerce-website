@@ -1,16 +1,13 @@
-import type { AccountOrderRow } from "@your-app/shared";
-
-const PLACED = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
-const SHORT = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", timeZone: "UTC" });
+import { formatDayMonth, type AccountOrderRow } from "@your-app/shared";
 
 /** "7 Oct 2026" */
 export function placedDate(iso: string): string {
-  return PLACED.format(new Date(iso));
+  return formatDayMonth(new Date(iso), { year: true });
 }
 
 /** "18 Sep" */
 export function shortDate(iso: string): string {
-  return SHORT.format(new Date(iso));
+  return formatDayMonth(new Date(iso));
 }
 
 export function plural(n: number, one: string, many: string): string {

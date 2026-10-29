@@ -26,7 +26,8 @@ function href(query: AccountOrdersQuery): string {
  */
 export default async function OrdersPage({ searchParams }: { searchParams: SearchParams }) {
   const query = parseAccountOrdersQuery(await searchParams);
-  const returnTo = href(query);
+  const isDefault = query.status === "all" && !query.q && query.page === 1;
+  const returnTo = isDefault ? "/account/orders" : href(query);
   await requireCustomerPage(returnTo);
   const data = await loadAccountData(returnTo, (api) => api.account.orders(query));
 

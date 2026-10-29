@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatCents, isLowStock, taxOnCents } from "../rules";
+import { formatCents, formatDayMonth, isLowStock, taxOnCents } from "../rules";
 
 describe("taxOnCents", () => {
   it("matches the BS-10428 sample: 8% of $63.00 is $5.04", () => {
@@ -32,5 +32,12 @@ describe("isLowStock", () => {
 describe("formatCents", () => {
   it("formats USD", () => {
     expect(formatCents(7304)).toBe("$73.04");
+  });
+});
+
+describe("formatDayMonth", () => {
+  it("writes September as Sep, as drawn (ICU en-GB says Sept)", () => {
+    expect(formatDayMonth(new Date("2026-09-18T15:00:00Z"))).toBe("18 Sep");
+    expect(formatDayMonth(new Date("2026-10-07T10:42:00Z"), { year: true })).toBe("7 Oct 2026");
   });
 });

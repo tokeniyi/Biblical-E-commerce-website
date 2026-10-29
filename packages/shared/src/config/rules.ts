@@ -69,7 +69,16 @@ export function formatCents(cents: number): string {
   );
 }
 
-const SHORT_DATE = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", timeZone: "UTC" });
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"] as const;
+
+/**
+ * "18 Sep" or, with the year, "18 Sep 2026", as drawn in Figma (UTC).
+ * Built by hand: ICU's en-GB short month for September is "Sept".
+ */
+export function formatDayMonth(date: Date, options: { year?: boolean } = {}): string {
+  const dayMonth = `${String(date.getUTCDate())} ${MONTHS[date.getUTCMonth()] ?? ""}`;
+  return options.year ? `${dayMonth} ${String(date.getUTCFullYear())}` : dayMonth;
+}
 
 /**
  * Delivery estimate window for a method, relative to "now" (Figma O04:
@@ -81,7 +90,7 @@ export function shippingEstimate(method: ShippingMethodId, from: Date): { label:
   const end = new Date(from.getTime() + maxDays * 86_400_000);
   const sameMonth = start.getUTCMonth() === end.getUTCMonth();
   const label = sameMonth
-    ? `${String(start.getUTCDate())}–${SHORT_DATE.format(end)}`
-    : `${SHORT_DATE.format(start)} – ${SHORT_DATE.format(end)}`;
+    ? `${String(start.getUTCDate())}–${formatDayMonth(end)}`
+    : `${formatDayMonth(start)} – ${formatDayMonth(end)}`;
   return { label, year: end.getUTCFullYear() };
 }
