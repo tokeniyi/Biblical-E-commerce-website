@@ -1,16 +1,16 @@
 import { z } from "zod";
 
-/** US-only per the wireframes (see the open question on NGN/Nigeria). */
-export const UsZipSchema = z.string().regex(/^\d{5}(-\d{4})?$/, "Enter a 5-digit ZIP code");
+/** US-only per the wireframes (see the open question on NGN/Nigeria). Copy from Figma E07. */
+export const UsZipSchema = z.string().regex(/^\d{5}(-\d{4})?$/, "Use a valid 5-digit ZIP.");
 
 export const AddressInputSchema = z.object({
-  fullName: z.string().trim().min(1, "Enter a full name"),
-  line1: z.string().trim().min(1, "Enter a street address"),
+  fullName: z.string().trim().min(1, "Enter a full name."),
+  line1: z.string().trim().min(1, "Enter a street address."),
   line2: z.string().trim().optional(),
-  city: z.string().trim().min(1, "Enter a city"),
-  state: z.string().trim().length(2, "Choose a state"),
+  city: z.string().trim().min(1, "Enter a city."),
+  state: z.string().trim().length(2, "Choose a state."),
   zip: UsZipSchema,
-  country: z.literal("US"),
+  country: z.literal("US", { errorMap: () => ({ message: "Choose a country." }) }),
   phone: z.string().trim().optional(),
 });
 export type AddressInput = z.infer<typeof AddressInputSchema>;

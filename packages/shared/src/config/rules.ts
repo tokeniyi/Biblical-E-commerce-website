@@ -68,3 +68,20 @@ export function formatCents(cents: number): string {
     cents / 100,
   );
 }
+
+const SHORT_DATE = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", timeZone: "UTC" });
+
+/**
+ * Delivery estimate window for a method, relative to "now" (Figma O04:
+ * placed 7 Oct → Standard "12–14 Oct", Express "9–10 Oct").
+ */
+export function shippingEstimate(method: ShippingMethodId, from: Date): { label: string; year: number } {
+  const { minDays, maxDays } = SHIPPING_METHODS[method];
+  const start = new Date(from.getTime() + minDays * 86_400_000);
+  const end = new Date(from.getTime() + maxDays * 86_400_000);
+  const sameMonth = start.getUTCMonth() === end.getUTCMonth();
+  const label = sameMonth
+    ? `${String(start.getUTCDate())}–${SHORT_DATE.format(end)}`
+    : `${SHORT_DATE.format(start)} – ${SHORT_DATE.format(end)}`;
+  return { label, year: end.getUTCFullYear() };
+}
