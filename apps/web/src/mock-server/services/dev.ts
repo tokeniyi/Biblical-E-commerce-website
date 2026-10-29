@@ -1,6 +1,7 @@
 // DELETE-ME-LATER: actions behind the DevToolbar.
 import type { IdentityOption } from "@/lib/dev/scenario-defs";
 import { createSession } from "./auth";
+import { adjustRating } from "./reviews";
 import type { Db } from "../types";
 
 const IDENTITY_USER_IDS: Record<Exclude<IdentityOption, "signed-out">, string> = {
@@ -30,7 +31,10 @@ export function identityOfUser(userId: string | null): IdentityOption {
 /** Moderation isn't wireframed (spec §5.11): publish every pending review. */
 export function approvePendingReviews(db: Db): number {
   const pending = db.reviews.filter((r) => r.status === "pending");
-  for (const review of pending) review.status = "published";
+  for (const review of pending) {
+    review.status = "published";
+    adjustRating(db, review.productSlug, review.rating, 1);
+  }
   return pending.length;
 }
 

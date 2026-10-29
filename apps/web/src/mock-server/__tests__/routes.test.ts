@@ -146,9 +146,9 @@ describe("wishlist routes", () => {
   });
 
   it("saves for the signed-in customer", async () => {
-    const jordan = sessionFor("cus_jordan");
-    await addWishlist(req("/api/wishlist", { method: "POST", body: { sku: "ESV-ST-HC" }, cookies: { [SESSION_COOKIE]: jordan } }));
-    const res = await getWishlist(req("/api/wishlist", { cookies: { [SESSION_COOKIE]: jordan } }));
+    const sam = sessionFor("cus_sam");
+    await addWishlist(req("/api/wishlist", { method: "POST", body: { sku: "ESV-ST-HC" }, cookies: { [SESSION_COOKIE]: sam } }));
+    const res = await getWishlist(req("/api/wishlist", { cookies: { [SESSION_COOKIE]: sam } }));
     expect(await res.json()).toEqual({ skus: ["ESV-ST-HC"] });
   });
 });

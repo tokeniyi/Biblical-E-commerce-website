@@ -6,6 +6,7 @@ import type {
   AddressInput,
   Cart,
   ContentPage,
+  MergeConflict,
   Discount,
   Order,
   PaymentIntent,
@@ -22,7 +23,11 @@ export type CustomerRecord = {
   kind: "customer";
   id: string;
   email: string;
+  /** "First Last", kept in step with the two name fields (session and header use it). */
   name: string;
+  firstName: string;
+  lastName: string;
+  phone: string | null;
   emailVerified: boolean;
   /** Mock only: plain text so testers can sign in. Never do this for real. */
   password: string;
@@ -45,10 +50,37 @@ export type SessionRecord = {
   id: string;
   userId: string;
   expiresAt: string;
+  /** "Keep me signed in on this device" (A01): a 30-day session and cookie. */
+  persistent: boolean;
+};
+
+/** Single-use emailed link (A03 verification, A06 password reset). */
+export type AuthTokenRecord = {
+  token: string;
+  kind: "verify-email" | "password-reset";
+  userId: string;
+  /** The address the link was sent to; verifying it verifies this exact email. */
+  email: string;
+  expiresAt: string;
+  usedAt: string | null;
+  /** Verification only: where to continue after the link (safe returnTo) and a ♡ save to finish. */
+  returnTo: string | null;
+  save: string | null;
+};
+
+/**
+ * The cart behind a token. A signed-in customer's cart is linked to them,
+ * so it follows them to other browsers and survives sign-out (A14).
+ */
+export type CartRecord = Cart & {
+  customerId: string | null;
+  /** Lines both carts had when sign-in merged them; resolved on O01. */
+  mergeConflicts: Omit<MergeConflict, "productName">[];
 };
 
 export type OutboxKind =
   | "verify-email"
+  | "account-notice"
   | "password-reset"
   | "guest-code"
   | "order-receipt"
@@ -100,7 +132,8 @@ export type Db = {
   products: Product[];
   users: UserRecord[];
   sessions: SessionRecord[];
-  carts: Cart[];
+  authTokens: AuthTokenRecord[];
+  carts: CartRecord[];
   wishlists: Record<string, string[]>;
   orders: Order[];
   checkouts: Partial<Record<string, CheckoutDraft>>;
@@ -112,6 +145,12 @@ export type Db = {
   content: ContentPage[];
   stockAdjustments: StockAdjustment[];
   outbox: OutboxMessage[];
+  /**
+   * Rate limits and resend cooldowns, in real wall-clock milliseconds (not
+   * the mock clock, which is usually frozen): failed sign-ins per email, and
+   * when each kind of email was last sent to an address.
+   */
+  throttle: Record<string, number[]>;
   /** One-shot scenario flags already fired (see lib/dev/scenario-defs.ts). */
   consumedOneShots: string[];
   /** Monotonic counter for generated ids, so ids stay stable across a run. */

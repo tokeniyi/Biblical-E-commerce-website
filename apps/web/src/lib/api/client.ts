@@ -5,6 +5,32 @@
  */
 import type { z } from "zod";
 import {
+  AccountOrderDetailSchema,
+  AccountOrdersResponseSchema,
+  AccountOverviewSchema,
+  AddressBookSchema,
+  AddressSchema,
+  AuthResultSchema,
+  CooldownResultSchema,
+  MyReviewsSchema,
+  ProfileSchema,
+  ProfileUpdateResultSchema,
+  RegisterResultSchema,
+  ReorderResultSchema,
+  ResetTokenStatusSchema,
+  ReviewFormViewSchema,
+  VerificationStatusSchema,
+  VerifyEmailResultSchema,
+  WishlistItemsSchema,
+  accountOrdersQueryToParams,
+  type AccountOrdersQuery,
+  type LoginInput,
+  type MergeChoiceInput,
+  type ProfileInput,
+  type RegisterInput,
+  type ResetPasswordInput,
+  type ReviewInput,
+  type SavedAddressInput,
   CartMutationResponseSchema,
   CartViewSchema,
   CategoryDirectorySchema,
@@ -151,6 +177,61 @@ export function createApiClient(options: ApiClientOptions = {}) {
       applyPromo: (code: string) => request("/api/cart/promo", CheckoutViewSchema, { method: "POST", body: { code } }),
       removePromo: () => request("/api/cart/promo", CheckoutViewSchema, { method: "DELETE" }),
       acceptChanges: () => request("/api/cart/reconcile", CheckoutViewSchema, { method: "POST" }),
+      resolveMerge: (input: MergeChoiceInput) =>
+        request("/api/cart/merge", CheckoutViewSchema, { method: "POST", body: input }),
+    },
+
+    auth: {
+      login: (input: LoginInput) => request("/api/auth/login", AuthResultSchema, { method: "POST", body: input }),
+      register: (input: RegisterInput) =>
+        request("/api/auth/register", RegisterResultSchema, { method: "POST", body: input }),
+      verificationStatus: () => request("/api/auth/verification", VerificationStatusSchema),
+      verifyEmail: (token: string) =>
+        request("/api/auth/verify-email", VerifyEmailResultSchema, { method: "POST", body: { token } }),
+      /** With an old link's token, or for the signed-in / just-registered address. */
+      resendVerification: (token?: string) =>
+        request("/api/auth/verify-email/resend", CooldownResultSchema, { method: "POST", body: token ? { token } : {} }),
+      forgotPassword: (email: string) =>
+        request("/api/auth/password/forgot", CooldownResultSchema, { method: "POST", body: { email } }),
+      checkResetToken: (token: string) =>
+        request(`/api/auth/password/reset?token=${encodeURIComponent(token)}`, ResetTokenStatusSchema),
+      resetPassword: (input: ResetPasswordInput) =>
+        request("/api/auth/password/reset", OkSchema, { method: "POST", body: input }),
+    },
+
+    account: {
+      overview: () => request("/api/account", AccountOverviewSchema),
+      profile: () => request("/api/account/profile", ProfileSchema),
+      updateProfile: (input: ProfileInput) =>
+        request("/api/account/profile", ProfileUpdateResultSchema, { method: "PATCH", body: input }),
+      addresses: () => request("/api/account/addresses", AddressBookSchema),
+      address: (id: string) => request(`/api/account/addresses/${encodeURIComponent(id)}`, AddressSchema),
+      addAddress: (input: SavedAddressInput) =>
+        request("/api/account/addresses", AddressBookSchema, { method: "POST", body: input }),
+      updateAddress: (id: string, input: SavedAddressInput) =>
+        request(`/api/account/addresses/${encodeURIComponent(id)}`, AddressBookSchema, { method: "PUT", body: input }),
+      deleteAddress: (id: string) =>
+        request(`/api/account/addresses/${encodeURIComponent(id)}`, AddressBookSchema, { method: "DELETE" }),
+      orders: (query: AccountOrdersQuery) =>
+        request(`/api/account/orders?${accountOrdersQueryToParams(query).toString()}`, AccountOrdersResponseSchema),
+      order: (id: string) => request(`/api/account/orders/${encodeURIComponent(id)}`, AccountOrderDetailSchema),
+      reorder: (id: string) =>
+        request(`/api/account/orders/${encodeURIComponent(id)}/reorder`, ReorderResultSchema, { method: "POST" }),
+      wishlist: () => request("/api/account/wishlist", WishlistItemsSchema),
+      reviews: () => request("/api/account/reviews", MyReviewsSchema),
+      reviewForm: (orderId: string, sku: string) =>
+        request(
+          `/api/account/orders/${encodeURIComponent(orderId)}/items/${encodeURIComponent(sku)}/review`,
+          ReviewFormViewSchema,
+        ),
+      submitReview: (orderId: string, sku: string, input: ReviewInput) =>
+        request(
+          `/api/account/orders/${encodeURIComponent(orderId)}/items/${encodeURIComponent(sku)}/review`,
+          ReviewFormViewSchema,
+          { method: "PUT", body: input },
+        ),
+      deleteReview: (id: string) =>
+        request(`/api/account/reviews/${encodeURIComponent(id)}`, MyReviewsSchema, { method: "DELETE" }),
     },
 
     checkout: {
@@ -175,6 +256,8 @@ export function createApiClient(options: ApiClientOptions = {}) {
     wishlist: {
       get: () => request("/api/wishlist", WishlistSchema),
       add: (sku: string) => request("/api/wishlist", WishlistSchema, { method: "POST", body: { sku } }),
+      remove: (sku: string) =>
+        request(`/api/wishlist/${encodeURIComponent(sku)}`, WishlistItemsSchema, { method: "DELETE" }),
     },
 
     dev: {

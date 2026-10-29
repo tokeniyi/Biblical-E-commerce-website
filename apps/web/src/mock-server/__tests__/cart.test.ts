@@ -81,7 +81,7 @@ describe("add to cart (C05 → C07)", () => {
   });
 
   it("an empty or unknown cart reads as empty", () => {
-    expect(cartView(db, findCart(db, "missing"))).toEqual({ lines: [], saved: [], itemCount: 0, subtotalCents: 0 });
+    expect(cartView(db, findCart(db, "missing"))).toEqual({ lines: [], saved: [], itemCount: 0, subtotalCents: 0, mergeConflicts: [] });
   });
 });
 
@@ -135,9 +135,10 @@ describe("saved for later (C08)", () => {
 
 describe("wishlist", () => {
   it("is idempotent per SKU", () => {
-    addToWishlist(db, "cus_jordan", "ESV-ST-HC");
-    addToWishlist(db, "cus_jordan", "ESV-ST-HC");
-    expect(getWishlist(db, "cus_jordan")).toEqual({ skus: ["ESV-ST-HC"] });
+    // Sam starts with an empty wishlist (Jordan's is seeded as drawn in A12).
+    addToWishlist(db, "cus_sam", "ESV-ST-HC");
+    addToWishlist(db, "cus_sam", "ESV-ST-HC");
+    expect(getWishlist(db, "cus_sam")).toEqual({ skus: ["ESV-ST-HC"] });
   });
 
   it("E05: sold-out editions can still be saved; drafts cannot", () => {

@@ -285,7 +285,7 @@ export function saveDelivery(db: Db, cart: Cart | undefined, body: unknown, view
   const customer = customerOf(db, viewer);
   if (customer && saveAddress) {
     const same = customer.addresses.some((a) => a.line1 === address.line1 && a.zip === address.zip && a.fullName === address.fullName);
-    if (!same) customer.addresses.push({ ...address, id: nextId(db, "adr"), isDefault: customer.addresses.length === 0 });
+    if (!same) customer.addresses.push({ ...address, email, id: nextId(db, "adr"), isDefault: customer.addresses.length === 0 });
   }
   if (scenario.shipping === "unsupported") throw shippingUnavailable();
 }

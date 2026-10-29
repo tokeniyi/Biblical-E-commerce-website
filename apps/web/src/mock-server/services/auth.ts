@@ -3,24 +3,47 @@
 import type { Session } from "@your-app/shared";
 import { addMinutes } from "../clock";
 import { MockApiError } from "../http";
-import { nextId } from "../store";
 import type { Db, UserRecord } from "../types";
 
 export const SESSION_COOKIE = "mock_session";
 export const CART_COOKIE = "cart_token";
+/** A02 → A03: the address waiting for verification in this browser (httpOnly). */
+export const PENDING_VERIFICATION_COOKIE = "pending_verification";
 
 /** Customer and staff sessions both last 2 hours in the mock. */
 export const SESSION_TTL_MINUTES = 120;
+
+/** "Keep me signed in on this device" (A01). */
+export const PERSISTENT_SESSION_DAYS = 30;
 
 export type SessionLookup =
   | { status: "none" }
   | { status: "expired" }
   | { status: "active"; session: Exclude<Session, { kind: "anonymous" }> };
 
-export function createSession(db: Db, user: UserRecord, at: Date): string {
-  const id = nextId(db, "ses");
-  db.sessions.push({ id, userId: user.id, expiresAt: addMinutes(at, SESSION_TTL_MINUTES).toISOString() });
+export function createSession(db: Db, user: UserRecord, at: Date, persistent = false): string {
+  // Unguessable, unlike the sequential ids used for records.
+  const id = `ses_${crypto.randomUUID()}`;
+  const ttl = persistent ? PERSISTENT_SESSION_DAYS * 24 * 60 : SESSION_TTL_MINUTES;
+  db.sessions.push({ id, userId: user.id, expiresAt: addMinutes(at, ttl).toISOString(), persistent });
   return id;
+}
+
+/** A06: a password change signs the account out everywhere. */
+export function endUserSessions(db: Db, userId: string): void {
+  db.sessions = db.sessions.filter((s) => s.userId !== userId);
+}
+
+type CookieWriter = { cookies: { set: (name: string, value: string, options: object) => unknown } };
+
+/** httpOnly session cookie; a browser-session cookie unless "keep me signed in" was ticked. */
+export function setSessionCookie(response: CookieWriter, sessionId: string, persistent: boolean): void {
+  response.cookies.set(SESSION_COOKIE, sessionId, {
+    path: "/",
+    sameSite: "lax",
+    httpOnly: true,
+    ...(persistent ? { maxAge: PERSISTENT_SESSION_DAYS * 24 * 60 * 60 } : {}),
+  });
 }
 
 export function endSession(db: Db, sessionId: string | undefined): void {

@@ -86,7 +86,12 @@ function namedProducts(): Product[] {
       "NIV Everyday Bible",
       ["devotional"],
       [{ sku: "NIV-EV-PB", translation: "NIV", binding: "Paperback", printSize: "Standard print", priceCents: 2400, onHand: 28, reserved: 2, isbn: "978-1-00000-003-5" }],
-      { specs: { pages: 1408, trimSize: "5.5 × 8.25 in", publisher: "Example Press" }, createdAt: "2026-02-16T09:00:00.000Z" },
+      {
+        // Jordan's published review (A13 "★★★★☆ Useful everyday edition").
+        rating: { average: 4, count: 1, histogram: [0, 1, 0, 0, 0] },
+        specs: { pages: 1408, trimSize: "5.5 × 8.25 in", publisher: "Example Press" },
+        createdAt: "2026-02-16T09:00:00.000Z",
+      },
     ),
     product(
       "kjv-large-print-bible",
@@ -246,7 +251,22 @@ function reviews(): Review[] {
       });
     }
   }
-  return [...named, ...filler];
+  const jordan: Review = {
+    id: "rev_jordan_niv",
+    productSlug: "niv-everyday-bible",
+    sku: "NIV-EV-PB",
+    status: "published",
+    verifiedPurchase: true,
+    rating: 4,
+    title: "Useful everyday edition",
+    body: "A practical size for daily reading, and the paperback is light enough to carry.",
+    authorName: "Jordan L.",
+    customerId: "cus_jordan",
+    orderId: "BS-10392",
+    helpfulCount: 0,
+    createdAt: "2026-09-25T12:00:00.000Z",
+  };
+  return [...named, ...filler, jordan];
 }
 
 const JORDAN_ADDRESS: Address = {
@@ -258,14 +278,19 @@ const JORDAN_ADDRESS: Address = {
   zip: "97205",
   country: "US",
   isDefault: true,
+  email: "jordan@example.com",
 };
 
 function customer(id: string, name: string, email: string, emailVerified: boolean): CustomerRecord {
+  const [firstName = name, ...rest] = name.split(" ");
   return {
     kind: "customer",
     id,
     email,
     name,
+    firstName,
+    lastName: rest.join(" "),
+    phone: null,
     emailVerified,
     password: SEED_PASSWORD,
     marketingOptIn: false,
@@ -320,7 +345,7 @@ const SAMPLE_TOTALS: Order["totals"] = {
   promoCode: null,
 };
 
-const { id: _addressId, isDefault: _isDefault, ...JORDAN_SHIPPING } = JORDAN_ADDRESS;
+const { id: _addressId, isDefault: _isDefault, email: _email, ...JORDAN_SHIPPING } = JORDAN_ADDRESS;
 
 /**
  * Only the orders whose contents the spec fully specifies. BS-10427/26/25/23
@@ -406,8 +431,10 @@ export function createSeed(): Db {
     products: [...namedProducts(), ...fillerProducts()],
     users: [...customers(), ...staff()],
     sessions: [],
+    authTokens: [],
     carts: [],
-    wishlists: {},
+    // A12 as drawn: three in stock and the sold-out NLT.
+    wishlists: { cus_jordan: ["ESV-ST-HC", "NIV-EV-PB", "KJV-LP-LL", "NLT-CH-HC"] },
     orders: orders(),
     checkouts: {},
     paymentIntents: [],
@@ -418,6 +445,7 @@ export function createSeed(): Db {
     content: content(),
     stockAdjustments: [],
     outbox: [],
+    throttle: {},
     consumedOneShots: [],
     seq: 1000,
   };
