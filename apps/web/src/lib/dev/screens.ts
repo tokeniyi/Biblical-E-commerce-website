@@ -22,8 +22,11 @@ export type Screen = {
   /** Concrete URL to open, with fixture ids and any scenario preset. */
   href: string;
   phase: number;
-  /** Open it with the drawn sample cart loaded (POST /api/__dev/cart/sample). */
-  sampleCart?: boolean;
+  /**
+   * Open it with the drawn sample cart loaded (POST /api/__dev/cart/sample);
+   * a stage also walks it into checkout with the drawn guest details.
+   */
+  sampleCart?: true | "delivery" | "processing" | "failed" | "confirmed";
 };
 
 const s = (
@@ -46,14 +49,14 @@ export const SCREENS: readonly Screen[] = [
   { ...s("C07", "Added to cart", "16:789", "Customer", "/products/[slug]?cart=added", "/products/esv-study-bible?variant=ESV-ST-HC&cart=added", 1), sampleCart: true },
   { ...s("C08", "Saved for later", "16:831", "Customer", "/cart/saved", "/cart/saved", 1), sampleCart: true },
 
-  s("O01", "Your cart", "16:873", "Checkout & orders", "/cart", "/cart", 2),
-  s("O02", "Checkout identity", "16:923", "Checkout & orders", "/checkout/identity", "/checkout/identity", 2),
-  s("O03", "Contact & delivery", "16:965", "Checkout & orders", "/checkout/delivery", "/checkout/delivery", 2),
-  s("O04", "Delivery method", "16:1026", "Checkout & orders", "/checkout/shipping", "/checkout/shipping", 2),
-  s("O05", "Payment & review", "16:1069", "Checkout & orders", "/checkout/payment", "/checkout/payment", 2),
-  s("O06", "Processing", "16:1125", "Checkout & orders", "/checkout/processing?intent=…", "/checkout/processing", 2),
-  s("O07", "Payment failed", "16:1163", "Checkout & orders", "/checkout/payment?status=failed", "/checkout/payment?status=failed", 2),
-  s("O08", "Order confirmed", "16:1202", "Checkout & orders", "/orders/[id]/confirmation", "/orders/BS-10428/confirmation", 2),
+  { ...s("O01", "Your cart", "16:873", "Checkout & orders", "/cart", "/cart", 2), sampleCart: true },
+  { ...s("O02", "Checkout identity", "16:923", "Checkout & orders", "/checkout/identity", "/checkout/identity", 2), sampleCart: true },
+  { ...s("O03", "Contact & delivery", "16:965", "Checkout & orders", "/checkout/delivery", "/checkout/delivery", 2), sampleCart: true },
+  { ...s("O04", "Delivery method", "16:1026", "Checkout & orders", "/checkout/shipping", "/checkout/shipping", 2), sampleCart: "delivery" },
+  { ...s("O05", "Payment & review", "16:1069", "Checkout & orders", "/checkout/payment", "/checkout/payment", 2), sampleCart: "delivery" },
+  { ...s("O06", "Processing", "16:1125", "Checkout & orders", "/checkout/processing?intent=…", "/checkout/processing", 2), sampleCart: "processing" },
+  { ...s("O07", "Payment failed", "16:1163", "Checkout & orders", "/checkout/payment?status=failed", "/checkout/payment?status=failed", 2), sampleCart: "failed" },
+  { ...s("O08", "Order confirmed", "16:1202", "Checkout & orders", "/orders/[id]/confirmation", "/orders/BS-10429/confirmation", 2), sampleCart: "confirmed" },
   s("O09", "Find guest order", "16:1248", "Checkout & orders", "/orders/lookup → /orders/verify", "/orders/lookup", 4),
   s("O10", "Track order", "16:1289", "Checkout & orders", "/orders/[id]/tracking", "/orders/BS-10428/tracking?scenario=order:shipped", 4),
   s("O11", "Cancel order", "16:1330", "Checkout & orders", "/orders/[id]/cancel", "/orders/BS-10428/cancel", 4),
@@ -114,21 +117,21 @@ const e = (
 ): EdgeState => ({ id, name, node, host, trigger, recovery, phase, href });
 
 export const EDGE_STATES: readonly EdgeState[] = [
-  e("E01", "Empty cart", "16:2731", "O01", "Last item removed / first visit", "C03, C08", 2),
+  e("E01", "Empty cart", "16:2731", "O01", "Last item removed / first visit", "C03, C08", 2, "/cart"),
   e("E02", "No search results", "16:2745", "C04/C03", "Zero matches", "Clear filters, edit search, C02", 1, "/search?q=spanish+study&translation=ESV&binding=Hardcover"),
   e("E03", "Empty wishlist", "16:2759", "A12", "Nothing saved", "C03, A07", 3),
   e("E04", "No orders yet", "16:2771", "A10", "No linked orders", "C01, O09", 3),
   e("E05", "Product sold out", "16:2784", "C05", "stock = 0", "C03 alternatives; wishlist A12/A01", 1, "/products/nlt-childrens-bible"),
-  e("E06", "Cart stock/price changed", "16:2798", "O01→O05", "Server quote differs", "Accept & update → O01; remove item", 2),
-  e("E07", "Invalid address", "16:2817", "O03/A09", "Required/ZIP invalid", "Error summary, focus first invalid", 2),
-  e("E08", "Promo invalid/expired", "16:2834", "O01", "Bad/expired/ineligible code", "Keep code, totals unchanged", 2),
+  e("E06", "Cart stock/price changed", "16:2798", "O01→O05", "Server quote differs", "Accept & update → O01; remove item", 2, "/cart?scenario=quote:both"),
+  e("E07", "Invalid address", "16:2817", "O03/A09", "Required/ZIP invalid", "Error summary, focus first invalid", 2, "/checkout/delivery"),
+  e("E08", "Promo invalid/expired", "16:2834", "O01", "Bad/expired/ineligible code", "Keep code, totals unchanged", 2, "/cart?scenario=promo:expired"),
   e("E09", "Login error", "16:2850", "A01", "Bad credentials", "Generic copy, retain email", 3),
   e("E10", "Reset token expired", "16:2864", "A06", "Expired/used token", "A04, A01", 3),
   e("E11", "Session expired", "16:2876", "A14", "Expired on guarded mutation", "A01 → returnTo (A11)", 3),
   e("E12", "Variant unavailable", "16:2889", "C05", "Draft/unavailable combo", "Offer valid variant", 1, "/products/esv-study-bible?variant=ESV-ST-LL-LP"),
   e("E13", "Guest verification invalid", "16:2903", "O09", "Wrong/expired code", "Resend, change lookup details", 4),
-  e("E14", "Shipping unavailable", "16:2917", "O03/O04", "Unsupported region", "Edit address, back to cart", 2),
-  e("E15", "Payment declined/uncertain", "16:2931", "O06/O07", "Known decline or unknown status", "Change method O05 / check status", 2),
+  e("E14", "Shipping unavailable", "16:2917", "O03/O04", "Unsupported region", "Edit address, back to cart", 2, "/checkout/delivery?scenario=shipping:unsupported"),
+  e("E15", "Payment declined/uncertain", "16:2931", "O06/O07", "Known decline or unknown status", "Change method O05 / check status", 2, "/checkout/payment?scenario=payment:uncertain-paid"),
   e("E16", "Loading product grid", "16:2949", "C03/C04", "Fetching", "Keep filters, reserve card geometry", 1, "/categories/bibles?scenario=latency:4000"),
   e("E17", "Loading order details", "16:2972", "A11/O10", "Authorized fetch in progress", "Not a status confirmation", 4),
   e("E18", "Network error", "16:2994", "C04/A11", "Fetch failed", "Retry original route", 1, "/search?q=bible&scenario=network:fail-read"),

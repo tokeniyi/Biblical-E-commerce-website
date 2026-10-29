@@ -145,3 +145,47 @@ export function loadSampleCart(db: Db, token: string | undefined): Cart {
 export function setCartCookie(response: { cookies: { set: (name: string, value: string, options: object) => unknown } }, token: string): void {
   response.cookies.set(CART_COOKIE, token, { path: "/", sameSite: "lax", httpOnly: true, maxAge: 60 * 60 * 24 * 30 });
 }
+
+function requireLine(cart: Cart | undefined, sku: string): Cart {
+  if (!cart?.lines.some((l) => l.sku === sku)) {
+    throw new MockApiError("not_found", "That item isn’t in your cart.");
+  }
+  return cart;
+}
+
+/**
+ * O01 quantity stepper: min 1, max = available. Zero is refused; removing
+ * is an explicit action. The line keeps the price the customer saw, so a
+ * price change still surfaces as E06.
+ */
+export function updateLineQuantity(db: Db, token: string | undefined, sku: string, quantity: number): CartView {
+  const cart = requireLine(findCart(db, token), sku);
+  if (!Number.isInteger(quantity) || quantity < 1) {
+    const message = "Quantity must be at least 1. Use Remove to take it out of your cart.";
+    throw new MockApiError("validation_failed", message, { quantity: [message] });
+  }
+  const found = findVariant(db, sku);
+  const available = isPurchasable(found) ? found.variant.stock.available : 0;
+  if (quantity > available) {
+    const message = `Only ${String(available)} available.`;
+    throw new MockApiError("validation_failed", message, { quantity: [message] }, { available });
+  }
+  const line = cart.lines.find((l) => l.sku === sku);
+  if (line) line.quantity = quantity;
+  return cartView(db, cart);
+}
+
+/** O01 "Remove" (after the confirm dialog) and E06 "Remove affected item". */
+export function removeLine(db: Db, token: string | undefined, sku: string): CartView {
+  const cart = requireLine(findCart(db, token), sku);
+  cart.lines = cart.lines.filter((l) => l.sku !== sku);
+  return cartView(db, cart);
+}
+
+/** O01 "Save → C08": moves the line out of the totals into saved for later. */
+export function saveLineForLater(db: Db, token: string | undefined, sku: string): CartView {
+  const cart = requireLine(findCart(db, token), sku);
+  cart.lines = cart.lines.filter((l) => l.sku !== sku);
+  if (!cart.saved.some((s) => s.sku === sku)) cart.saved.push({ sku });
+  return cartView(db, cart);
+}

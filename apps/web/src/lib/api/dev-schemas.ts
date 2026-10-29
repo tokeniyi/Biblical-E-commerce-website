@@ -11,6 +11,9 @@ export const DevStateSchema = z.object({
   now: z.string().datetime(),
   outboxCount: z.number().int().nonnegative(),
   pendingReviews: z.number().int().nonnegative(),
+  /** Lets E2E assert "exactly one order, one charge" (spec §8). */
+  orderCount: z.number().int().nonnegative(),
+  paymentIntentCount: z.number().int().nonnegative(),
 });
 export type DevState = z.infer<typeof DevStateSchema>;
 

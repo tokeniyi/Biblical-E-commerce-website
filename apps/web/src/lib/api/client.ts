@@ -8,6 +8,9 @@ import {
   CartMutationResponseSchema,
   CartViewSchema,
   CategoryDirectorySchema,
+  CheckoutViewSchema,
+  OrderConfirmationSchema,
+  PaymentIntentViewSchema,
   ErrorEnvelopeSchema,
   ListingResponseSchema,
   ProductDetailSchema,
@@ -17,6 +20,9 @@ import {
   listingQueryToParams,
   reviewsQueryToParams,
   type AddToCartInput,
+  type DeliveryInput,
+  type PaymentInput,
+  type ShippingMethodId,
   type ApiErrorCode,
   type ListingQuery,
   type ReviewsQuery,
@@ -136,6 +142,34 @@ export function createApiClient(options: ApiClientOptions = {}) {
         request(`/api/cart/saved/${encodeURIComponent(sku)}/move`, CartMutationResponseSchema, { method: "POST" }),
       removeSaved: (sku: string) =>
         request(`/api/cart/saved/${encodeURIComponent(sku)}`, CartViewSchema, { method: "DELETE" }),
+      setQuantity: (sku: string, quantity: number) =>
+        request(`/api/cart/lines/${encodeURIComponent(sku)}`, CheckoutViewSchema, { method: "PATCH", body: { quantity } }),
+      removeLine: (sku: string) =>
+        request(`/api/cart/lines/${encodeURIComponent(sku)}`, CheckoutViewSchema, { method: "DELETE" }),
+      saveForLater: (sku: string) =>
+        request(`/api/cart/lines/${encodeURIComponent(sku)}/save`, CheckoutViewSchema, { method: "POST" }),
+      applyPromo: (code: string) => request("/api/cart/promo", CheckoutViewSchema, { method: "POST", body: { code } }),
+      removePromo: () => request("/api/cart/promo", CheckoutViewSchema, { method: "DELETE" }),
+      acceptChanges: () => request("/api/cart/reconcile", CheckoutViewSchema, { method: "POST" }),
+    },
+
+    checkout: {
+      get: () => request("/api/checkout", CheckoutViewSchema),
+      saveDelivery: (input: DeliveryInput) =>
+        request("/api/checkout/delivery", CheckoutViewSchema, { method: "POST", body: input }),
+      chooseShipping: (method: ShippingMethodId) =>
+        request("/api/checkout/shipping", CheckoutViewSchema, { method: "POST", body: { method } }),
+      pay: (input: PaymentInput) =>
+        request("/api/checkout/payment", PaymentIntentViewSchema, { method: "POST", body: input }),
+      getIntent: (id: string) =>
+        request(`/api/checkout/intents/${encodeURIComponent(id)}`, PaymentIntentViewSchema),
+      checkIntent: (id: string) =>
+        request(`/api/checkout/intents/${encodeURIComponent(id)}/check`, PaymentIntentViewSchema, { method: "POST" }),
+    },
+
+    orders: {
+      getConfirmation: (id: string) =>
+        request(`/api/orders/${encodeURIComponent(id)}/confirmation`, OrderConfirmationSchema),
     },
 
     wishlist: {

@@ -17,3 +17,4 @@ export * from "./stock-adjustment.schema";
 export * from "./session.schema";
 export * from "./catalog.schema";
 export * from "./wishlist.schema";
+export * from "./checkout.schema";
