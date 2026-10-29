@@ -277,46 +277,45 @@ test.describe("product, variant and cart (C05 → C07)", () => {
 });
 
 test.describe("wishlist ♡", () => {
-  test("signed out → sign in with returnTo; signed in → saved", async ({ page }) => {
-    await page.goto("/categories/bibles");
-    const save = page.getByRole("link", { name: "♡ Save ESV Study Bible (sign in to save)" });
-    await expect(save).toHaveAttribute("href", "/login?returnTo=%2Fcategories%2Fbibles");
+  // Jordan's wishlist is seeded as drawn in A12 (ESV, NIV, KJV, NLT Children’s), so these use another edition.
+  test("signed out → sign in with returnTo and the SKU; signed in → saved", async ({ page }) => {
+    await page.goto("/categories/bibles?translation=NLT");
+    const save = page.getByRole("link", { name: "♡ Save NLT Thinline Bible (sign in to save)" });
+    await expect(save).toHaveAttribute("href", "/login?returnTo=%2Fcategories%2Fbibles%3Ftranslation%3DNLT&save=NLT-TH04-HA");
 
     await chooseInToolbar(page, "Identity", "customer");
     await page.reload();
-    await page.getByRole("button", { name: "♡ Save ESV Study Bible" }).click();
+    await page.getByRole("button", { name: "♡ Save NLT Thinline Bible" }).click();
     await expect(page.getByText("♥ Saved").first()).toBeVisible();
     await page.reload();
-    await expect(page.getByRole("link", { name: "View wishlist" })).toHaveAttribute("href", "/account/wishlist");
+    await expect(page.getByRole("link", { name: "View wishlist" }).first()).toHaveAttribute("href", "/account/wishlist");
   });
 
-  test("after sign-in, returnTo brings the customer back with the heart truly unsaved", async ({ page }) => {
-    // No auto-save on return (that is Phase 3): the tap before sign-in saved nothing,
-    // so the page must not claim it did.
-    await page.goto("/categories/bibles?translation=ESV");
-    await page.getByRole("link", { name: "♡ Save ESV Study Bible (sign in to save)" }).click();
-    await expect(page).toHaveURL("/login?returnTo=%2Fcategories%2Fbibles%3Ftranslation%3DESV");
+  test("after sign-in, returnTo brings the customer back with the tapped ♡ saved (owner decision)", async ({ page }) => {
+    await page.goto("/categories/bibles?translation=NLT");
+    await page.getByRole("link", { name: "♡ Save NLT Thinline Bible (sign in to save)" }).click();
+    await expect(page).toHaveURL("/login?returnTo=%2Fcategories%2Fbibles%3Ftranslation%3DNLT&save=NLT-TH04-HA");
 
-    // A01 is a Phase 3 stub: sign in through the dev identity endpoint, then follow returnTo.
-    const res = await page.request.post("/api/__dev/identity", { data: { identity: "customer" } });
-    expect(res.status()).toBe(200);
-    const returnTo = new URL(page.url()).searchParams.get("returnTo") ?? "";
-    await page.goto(returnTo);
+    await page.getByLabel("Email *", { exact: true }).fill("jordan@example.com");
+    await page.getByLabel("Password *", { exact: true }).fill("wireframe-password");
+    await page.getByRole("button", { name: "Sign in" }).click();
 
-    await expect(page).toHaveURL("/categories/bibles?translation=ESV");
-    await expect(page.getByRole("button", { name: "♡ Save ESV Study Bible" })).toBeVisible();
-    await expect(page.getByText("♥ Saved")).toHaveCount(0);
-    expect(await (await page.request.get("/api/wishlist")).json()).toEqual({ skus: [] });
+    await expect(page).toHaveURL("/categories/bibles?translation=NLT");
+    await expect(page.getByRole("button", { name: "♡ Save NLT Thinline Bible" })).toHaveCount(0);
+    await expect(page.getByText("♥ Saved").first()).toBeVisible();
+    const { skus } = (await (await page.request.get("/api/wishlist")).json()) as { skus: string[] };
+    expect(skus).toContain("NLT-TH04-HA");
   });
 
   test("an expired session sends the customer to A14 with returnTo", async ({ page }) => {
-    await page.goto("/products/esv-study-bible");
+    await page.goto("/products/nlt-thinline-bible-04");
     await chooseInToolbar(page, "Identity", "customer");
     await page.reload();
     // Expire it behind the page's back: the page still shows the signed-in ♡ button.
     expect((await page.request.post("/api/__dev/session/expire")).status()).toBe(200);
-    await page.getByRole("button", { name: "♡ Wishlist ESV Study Bible" }).click();
-    await expect(page).toHaveURL(/\/login\?returnTo=%2Fproducts%2Fesv-study-bible.*&reason=session-expired/);
+    await page.getByRole("button", { name: "♡ Wishlist NLT Thinline Bible" }).click();
+    await expect(page).toHaveURL(/\/login\?returnTo=%2Fproducts%2Fnlt-thinline-bible-04.*&reason=session-expired/);
+    await expect(page.getByRole("heading", { level: 1, name: "Please sign in to continue" })).toBeVisible();
   });
 });
 

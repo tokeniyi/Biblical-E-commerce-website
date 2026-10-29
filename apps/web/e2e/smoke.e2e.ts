@@ -27,12 +27,14 @@ test.describe("app boots and shells render", () => {
   });
 
   test("account pages use the account sidebar", async ({ page }) => {
+    await page.goto("/");
+    await chooseInToolbar(page, "Identity", "customer");
     await page.goto("/account");
-    await expect(page.getByRole("heading", { level: 1, name: "A07 / Account overview" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: "Your account" })).toBeVisible();
     const menu = page.getByRole("navigation", { name: "Account menu" });
     await menu.getByRole("link", { name: "Orders" }).click();
     await expect(page).toHaveURL("/account/orders");
-    await expect(page.getByRole("heading", { level: 1, name: "A10 / Orders" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: "Your orders" })).toBeVisible();
     await expect(menu.getByRole("link", { name: "Orders" })).toHaveAttribute("aria-current", "page");
   });
 
@@ -183,7 +185,7 @@ test.describe("dev pages", () => {
     const rows = page.getByTestId("screen-row");
     await expect(rows).toHaveCount(48);
 
-    // Rows that need the sample cart are forms that POST, then redirect to the screen.
+    // Rows that need the sample cart or an identity preset are forms that POST, then redirect to the screen.
     const links = await rows.evaluateAll((trs) =>
       trs.map((tr) => ({
         id: tr.querySelector("td")?.textContent ?? "",
@@ -205,14 +207,19 @@ test.describe("dev pages", () => {
     await page.goto("/__dev/states");
     const ids = await page.getByTestId("state-row").locator("td:first-child").allTextContents();
     expect(ids).toEqual(Array.from({ length: 25 }, (_, i) => `E${String(i + 1).padStart(2, "0")}`));
-    // Phase 1 and 2 states render in isolation.
+    // Phase 1–3 states render in isolation.
     await expect(page.getByTestId("rendered-state").locator(":scope > h2")).toHaveText([
       "E01 / Empty cart",
       "E02 / No search results",
+      "E03 / Empty wishlist",
+      "E04 / No orders yet",
       "E05 / Product sold out",
       "E06 / Cart stock/price changed",
       "E07 / Invalid address",
       "E08 / Promo invalid/expired",
+      "E09 / Login error",
+      "E10 / Reset token expired",
+      "E11 / Session expired",
       "E12 / Variant unavailable",
       "E14 / Shipping unavailable",
       "E15 / Payment declined/uncertain",
