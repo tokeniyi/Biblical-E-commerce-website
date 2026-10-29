@@ -6,7 +6,7 @@ Read this first, then the spec.
 ## Workflow (from the owner)
 
 - One phase at a time, in spec §9 order. Branch `feat/wireframes-phase-N-<name>`, small commits.
-- **PR base is `claude-code-frontend`** (not `main`; the spec and auth work live there).
+- **PR base is `main`** from Phase 2 on (Phase 0 went to `claude-code-frontend`).
 - Before a PR: `pnpm lint`, `pnpm typecheck`, `pnpm test`, and `pnpm --filter web e2e`, all green.
 - `gh` is not installed: push, then give the owner the compare link and the PR body
   (`docs/pr/phase-N.md`). The owner opens and merges; never merge.
@@ -15,57 +15,34 @@ Read this first, then the spec.
 - A passing test only counts if it exercises the behavior (owner's rule). Verify in the
   browser too.
 
-## Current phase: 1 — Storefront (PR open, awaiting review)
+## Current phase: 2 — Cart & checkout (PR open, awaiting review)
 
-Phase 0 merged into `claude-code-frontend` (PR #15).
-Branch: `claude/nifty-hypatia-lgqqdn` (the session's assigned branch) → PR into `claude-code-frontend`.
-Next: Phase 2 (Cart & checkout: O01–O08; E01, E06, E07, E08, E14, E15).
+Phase 1 merged into `main` (PR #16). **From Phase 2 on, PR base is `main`** (owner, 26 Oct 2026);
+`claude-code-frontend` stops at Phase 0.
+Branch: `feat/wireframes-phase-2-checkout` → PR into `main`. PR body: `docs/pr/phase-2.md`.
+Next: Phase 3 (Auth & account: A01–A14; Dev Inbox flows; E03, E04, E09, E10, E11).
 
 | Item | Status |
 |---|---|
-| Shared contracts: listing query helpers, listing/product/reviews responses, cart view, wishlist | done |
-| Seed retuned so every drawn count is a server count (24 / 18 / C02 24·18·12·16 / 124 reviews) | done |
-| Mock services: catalog, cart + saved-for-later, wishlist, reviews + eligibility | done |
-| C01 Home, C02 Category directory | done |
-| C03 / C04 listing module (facets, sort, pagination, chips, debounced price) | done |
-| C05 product & variant, C07 added-to-cart drawer | done |
-| C06 product reviews, C08 saved for later | done |
-| E02, E05, E12, E16, E18, E19 in the real flow and in `/__dev/states` | done |
-| Dev: "Load sample cart" (toolbar + `/__dev/screens` form) | done |
-| Unit/integration (shared 48, web 111) + Playwright (39: smoke 16 + storefront 23) | done |
+| Shared `checkout.schema.ts`; E07 address copy; `shippingEstimate()` | done |
+| Mock: `pricing.ts` (pure quote math), `checkout.ts` (promo, E06, delivery, rates, intents, orders, O08 access) | done |
+| O01–O08 with CheckoutStepper, OrderSummary, AddressForm/Field/ErrorSummary | done |
+| E01, E06, E07, E08, E14, E15 in the real flow and in `/__dev/states` | done |
+| Dev: quote drift one-shot; `/__dev/screens` O04–O08 stage presets; dev state order/intent counts | done |
+| Unit (web 139, shared 48) + Playwright (53: smoke 16 + storefront 23 + checkout 14) | done |
 
-### Phase 1 decisions (not covered by the spec)
+### Phase 2 decisions (not covered by the spec)
 
-1. `/categories/bibles` is All Bibles (the Figma C03 URL). Category slugs: `study`, `devotional`,
-   `children`, `journaling`, `large-print` (a variant property), plus the C02 collections
-   `family-reading` (Children's + Devotional) and `gift-editions` (titles containing "Gift"),
-   both confirmed by the owner. Large print stays both a C01 category tile and a C03 facet
-   checkbox (owner: keep both).
-2. Absent listing params mean the drawn defaults (English, In stock). Removing those chips writes
-   `language=all` / `availability=all`; "Clear all" returns to the defaults and keeps `q`.
-3. URL formats: `translation=ESV,KJV`, `type=study`, `price=10-40` (whole dollars), `largePrint=true`.
-   Sort changes also reset to page 1. A page past the end shows the last page.
-4. Products can sit in several categories, which is how C02's 24/18/12/16 fit 48 products.
-   Filler 14–19 are titled "Edition" (so "bible" finds 18), 20–35 are sold out, 36–39 are Spanish.
-5. C06 shows 2 reviews per page (`REVIEWS_PAGE_SIZE`), as drawn; 122 filler reviews make the
-   histogram real. The stored 4.8 average stays as drawn (open question 4).
-6. A product card shows the first variant that matches the filters.
-7. E16 shows while a facet/sort/page change loads (client transition). A first page load waits
-   for the server instead.
-8. `GET /api/cart` and `GET /api/wishlist` are page chrome (no injected faults), so
-   "fail next read" lands on each page's main data (E18).
-9. ♡ Save when signed in saves in place and shows "♥ Saved · View wishlist"; signed out it links
-   to `/login?returnTo=…`; an expired session goes to `/login?reason=session-expired&returnTo=…`.
-   Returning via returnTo shows the server's true state: a tap made while signed out saved
-   nothing, so the heart reads "♡ Save" (E2E-tested). The button re-syncs whenever the server
-   value changes, so it never shows a save that didn't happen.
-10. C08 "Move to cart" lands on the C07 drawer on that product's page.
-11. Add-to-cart failures show the server message inline (E06 is the Phase 2 quote check).
-12. Copy not in Figma, kept minimal: review eligibility guidance, "No reviews yet.",
-    "You have no saved items.", add-to-cart and move errors.
-13. C05's "See O12 for eligibility" links to `/help/shipping-returns` (O12 needs an order).
-14. E19's "Search Bibles" jumps to the header search; `/search` without `q` redirects to C01.
-15. Helpful (n) · Report review are plain text: no behavior is wireframed.
+See `docs/pr/phase-2.md` ("Decisions the spec didn't cover") for the full list. The ones that
+affect later phases:
+
+1. New orders continue from BS-10429; the guest order session is the paying browser's cart
+   token for 60 minutes (O09 in Phase 4 adds the email-code path).
+2. `GET /api/checkout` is the one read for O01–O07 (not chrome; E18 lands on it).
+3. Quote drift is one-shot and mutates the catalog (stock/price), so E06 persists until accepted.
+4. Checkout controls are disabled until hydration (`useHydrated`): pre-hydration native submits
+   would put addresses or card numbers in the URL. Use it for any new form that posts data.
+5. The O03 "Save this address" option writes to the customer's address book (A09, Phase 3).
 
 ## How the mock tooling works (read before each phase)
 
@@ -105,6 +82,11 @@ Next: Phase 2 (Cart & checkout: O01–O08; E01, E06, E07, E08, E14, E15).
     (their line items are not specified; B02 shows only totals).
 
 ## Open questions (for the owner)
+
+Phase 2:
+
+8. Confirm the copy listed in `docs/pr/phase-2.md` ("Copy not in Figma").
+9. When is a shipping method unavailable (O04 "with reasons")? No rule in Figma.
 
 Phase 1:
 
