@@ -71,7 +71,8 @@ test.describe("basic navigation", () => {
     }
     await page.getByRole("link", { name: "Cart (0)" }).click();
     await expect(page).toHaveURL("/cart");
-    await expect(page.getByRole("heading", { level: 1, name: "O01 / Your cart" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: "Your cart" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Your cart is empty" })).toBeVisible();
   });
 
   test("header search submits q to the search route", async ({ page }) => {
@@ -204,11 +205,17 @@ test.describe("dev pages", () => {
     await page.goto("/__dev/states");
     const ids = await page.getByTestId("state-row").locator("td:first-child").allTextContents();
     expect(ids).toEqual(Array.from({ length: 25 }, (_, i) => `E${String(i + 1).padStart(2, "0")}`));
-    // Phase 1 states render in isolation.
+    // Phase 1 and 2 states render in isolation.
     await expect(page.getByTestId("rendered-state").locator(":scope > h2")).toHaveText([
+      "E01 / Empty cart",
       "E02 / No search results",
       "E05 / Product sold out",
+      "E06 / Cart stock/price changed",
+      "E07 / Invalid address",
+      "E08 / Promo invalid/expired",
       "E12 / Variant unavailable",
+      "E14 / Shipping unavailable",
+      "E15 / Payment declined/uncertain",
       "E16 / Loading product grid",
       "E18 / Network error",
       "E19 / 404",
