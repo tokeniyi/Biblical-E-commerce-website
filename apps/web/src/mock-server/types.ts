@@ -3,12 +3,15 @@
 // keep in Postgres.
 import type {
   Address,
+  AddressInput,
   Cart,
   ContentPage,
   Discount,
   Order,
   PaymentIntent,
   Product,
+  Quote,
+  ShippingMethodId,
   ReturnRequest,
   Review,
   StaffRole,
@@ -64,6 +67,35 @@ export type OutboxMessage = {
   sentAt: string;
 };
 
+/** Checkout progress for one cart (O03/O04), kept server-side so Back never loses it. */
+export type CheckoutDraft = {
+  email: string;
+  address: AddressInput;
+  emailUpdates: boolean;
+  shippingMethod: ShippingMethodId;
+};
+
+/** Scenario outcome locked in when the intent was created (spec §7.1 payment). */
+export type PaymentOutcome = "paid" | "declined" | "uncertain-paid" | "uncertain-failed" | "pending";
+
+/** Server-side payment intent: the public fields plus what the order is built from. */
+export type PaymentIntentRecord = PaymentIntent & {
+  cartToken: string;
+  customerId: string | null;
+  outcome: PaymentOutcome;
+  paymentMethodLabel: string;
+  /** Snapshot at submit time, so the order matches what was paid for. */
+  snapshot: {
+    lines: Order["lines"];
+    quote: Quote;
+    email: string;
+    address: AddressInput;
+  };
+};
+
+/** Guest order-session (O08): the paying browser's cart token may read the order briefly. */
+export type OrderAccessGrant = { cartToken: string; orderId: string; expiresAt: string };
+
 export type Db = {
   products: Product[];
   users: UserRecord[];
@@ -71,7 +103,9 @@ export type Db = {
   carts: Cart[];
   wishlists: Record<string, string[]>;
   orders: Order[];
-  paymentIntents: PaymentIntent[];
+  checkouts: Partial<Record<string, CheckoutDraft>>;
+  paymentIntents: PaymentIntentRecord[];
+  orderAccess: OrderAccessGrant[];
   returns: ReturnRequest[];
   reviews: Review[];
   discounts: Discount[];

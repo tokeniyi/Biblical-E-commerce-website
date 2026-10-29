@@ -21,6 +21,8 @@ export const GET = mockHandler(
       now: at.toISOString(),
       outboxCount: db.outbox.length,
       pendingReviews: db.reviews.filter((r) => r.status === "pending").length,
+      orderCount: db.orders.length,
+      paymentIntentCount: db.paymentIntents.length,
     };
     return NextResponse.json(body);
   },

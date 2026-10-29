@@ -18,7 +18,9 @@ export const SCENARIO_DEFS = {
   quote: {
     label: "Quote drift",
     options: ["none", "stock", "price", "both"],
-    oneShot: false,
+    // Changes the catalog once (like a real sale or repricing); E06 then
+    // stays until the customer accepts, so re-applying would loop.
+    oneShot: true,
   },
   shipping: {
     label: "Shipping",

@@ -17,6 +17,8 @@ const STATUS_BY_CODE: Partial<Record<ApiErrorCode, number>> = {
   rate_limited: 429,
   version_conflict: 409,
   quote_changed: 409,
+  promo_invalid: 422,
+  shipping_unavailable: 422,
   internal: 500,
 };
 
