@@ -35,11 +35,16 @@ export default function ScreensPage() {
                     <td className="p-2">
                       {s.sampleCart ? (
                         // Loads the drawn cart for this browser, then opens the screen.
-                        <form method="post" action={`/api/__dev/cart/sample?next=${encodeURIComponent(s.href)}`}>
+                        <form
+                          method="post"
+                          action={`/api/__dev/cart/sample?next=${encodeURIComponent(s.href)}${s.sampleCart === true ? "" : `&stage=${s.sampleCart}`}`}
+                        >
                           <button type="submit" className="text-left underline">
                             {s.name}
                           </button>{" "}
-                          <span className="text-muted">(loads sample cart)</span>
+                          <span className="text-muted">
+                            {s.sampleCart === true ? "(loads sample cart)" : `(sample cart → ${s.sampleCart})`}
+                          </span>
                         </form>
                       ) : (
                         <Link href={s.href} className="underline">

@@ -1,6 +1,11 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { DEFAULT_LISTING_QUERY } from "@your-app/shared";
+import { CartChanges } from "@/components/checkout/CartChanges";
+import { EmptyCart, ShippingUnavailable } from "@/components/checkout/EdgeStates";
+import { PaymentDeclined, PaymentUncertain } from "@/components/checkout/PaymentStates";
+import { ErrorSummary } from "@/components/forms/ErrorSummary";
+import { Field, controlProps, inputClass } from "@/components/forms/Field";
 import { LoadingGrid } from "@/components/storefront/LoadingGrid";
 import { NetworkError } from "@/components/storefront/NetworkError";
 import { NotFoundPanel } from "@/components/storefront/NotFoundPanel";
@@ -15,7 +20,76 @@ import { EDGE_STATES, figmaNodeUrl } from "@/lib/dev/screens";
  * The same components render in the real flow; the "Open in flow" link
  * reaches it there with the scenario preset (spec §3.5).
  */
+const E06_TOTALS = {
+  subtotalCents: 6400,
+  shippingCents: 500,
+  taxCents: 512,
+  discountCents: 0,
+  totalCents: 7412,
+  shippingMethod: null,
+  promoCode: null,
+};
+
 const RENDERED: Record<string, ReactNode> = {
+  E01: <EmptyCart />,
+  E06: (
+    <CartChanges
+      interactive={false}
+      reconciled={E06_TOTALS}
+      changes={[
+        { sku: "ESV-ST-HC", productName: "ESV Study Bible", cartQuantity: 2, cartUnitPriceCents: 3900, available: 1, currentPriceCents: null },
+        { sku: "NIV-EV-PB", productName: "NIV Everyday Bible", cartQuantity: 1, cartUnitPriceCents: 2400, available: null, currentPriceCents: 2500 },
+      ]}
+    />
+  ),
+  E07: (
+    <div className="flex flex-col gap-3.5">
+      <ErrorSummary
+        items={[
+          { fieldId: "e07-line1", message: "Address line 1 is required." },
+          { fieldId: "e07-zip", message: "ZIP code is invalid." },
+        ]}
+      />
+      <div className="flex flex-col gap-4 sm:flex-row">
+        <Field id="e07-line1" label="Address line 1" required error="Enter a street address." className="flex-1">
+          <input {...controlProps("e07-line1", "Enter a street address.")} className={inputClass} defaultValue="" />
+        </Field>
+        <Field id="e07-zip" label="ZIP code" required error="Use a valid 5-digit ZIP." className="flex-1">
+          <input {...controlProps("e07-zip", "Use a valid 5-digit ZIP.")} className={inputClass} defaultValue="97" />
+        </Field>
+      </div>
+      <Link href="/checkout/delivery" className={`${primaryButton} self-start`}>
+        Correct and continue
+      </Link>
+    </div>
+  ),
+  E08: (
+    <div className="flex flex-col gap-3.5">
+      <Field id="e08-code" label="Promo code" error="This code has expired. No discount was applied.">
+        <input {...controlProps("e08-code", "This code has expired. No discount was applied.")} className={inputClass} defaultValue="STUDY15" />
+      </Field>
+      <p className="text-base">
+        Subtotal $63.00 · Shipping $5.00 · Tax $5.04
+        <br />
+        Total $73.04
+      </p>
+      <p className="text-sm">Invalid variant: “Code not recognized.” Ineligible variant: shows the minimum or category requirement.</p>
+      <Link href="/cart" className={`${primaryButton} self-start`}>
+        Try another code
+      </Link>
+    </div>
+  ),
+  E14: <ShippingUnavailable />,
+  E15: (
+    <div className="flex flex-col gap-4 sm:flex-row">
+      <div className="flex-1">
+        <PaymentDeclined />
+      </div>
+      <div className="flex-1">
+        <PaymentUncertain />
+      </div>
+    </div>
+  ),
   E02: (
     <ListingProvider
       basePath="/search"
