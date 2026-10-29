@@ -42,6 +42,26 @@ export const SavedItemViewSchema = z.object({
 });
 export type SavedItemView = z.infer<typeof SavedItemViewSchema>;
 
+/**
+ * Sign-in merged this browser's cart with the account's cart and both had
+ * the same edition. The quantity from this visit was kept, never raised
+ * silently; the customer chooses (spec §5.1 "prompt on conflicts").
+ */
+export const MergeConflictSchema = z.object({
+  sku: z.string(),
+  productName: z.string(),
+  keptQuantity: z.number().int().min(1),
+  accountQuantity: z.number().int().min(1),
+});
+export type MergeConflict = z.infer<typeof MergeConflictSchema>;
+
+/** POST /api/cart/merge: keep this visit's quantity, or use the account cart's. */
+export const MergeChoiceInputSchema = z.object({
+  sku: z.string().min(1),
+  use: z.enum(["kept", "account"]),
+});
+export type MergeChoiceInput = z.infer<typeof MergeChoiceInputSchema>;
+
 /** GET /api/cart. The cart token itself stays in an httpOnly cookie. */
 export const CartViewSchema = z.object({
   lines: z.array(CartLineViewSchema),
@@ -49,6 +69,7 @@ export const CartViewSchema = z.object({
   /** Sum of quantities: the header "Cart (n)" and C07 "Cart: 2 items". */
   itemCount: z.number().int().nonnegative(),
   subtotalCents: NonNegativeCentsSchema,
+  mergeConflicts: z.array(MergeConflictSchema),
 });
 export type CartView = z.infer<typeof CartViewSchema>;
 

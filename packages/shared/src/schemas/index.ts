@@ -18,3 +18,4 @@ export * from "./session.schema";
 export * from "./catalog.schema";
 export * from "./wishlist.schema";
 export * from "./checkout.schema";
+export * from "./account.schema";
