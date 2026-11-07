@@ -155,7 +155,7 @@ jobs:
             const maxCommentBytes = 60000;
             const encoded = Buffer.from(body, 'utf8');
             if (encoded.length > maxCommentBytes) {
-              const suffix = '\\n\\n_[Review truncated to fit GitHub comment limits.]_';
+              const suffix = '\n\n_[Review truncated to fit GitHub comment limits.]_';
               const budget = maxCommentBytes - Buffer.byteLength(suffix, 'utf8');
               let truncated = encoded.subarray(0, budget).toString('utf8');
               // Avoid ending with a partial Unicode replacement character.
