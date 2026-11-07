@@ -1,0 +1,45 @@
+name: Validate GitHub workflows
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/**'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/**'
+
+permissions:
+  contents: read
+
+jobs:
+  workflow-validation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Lint GitHub Actions workflows
+        run: |
+          docker run --rm -v "$PWD:/repo" -w /repo rhysd/actionlint:1.7.7 -color
+      - name: Dry-run review comment size boundary
+        shell: bash
+        run: |
+          node <<'NODE'
+          const assert = require('node:assert/strict');
+          const marker = '<!-- kilo-ai-review -->';
+          const prefix = [marker, '## Kilo AI code review', '**Head commit:** abc', '**Model:** kilo-auto/free', 'Reviewed patches for 1/1 changed files.', ''].join('\n');
+          const suffix = '\n\n_[Review truncated to fit GitHub comment limits.]_';
+          const maxBytes = 60000;
+          const clamp = body => {
+            const bytes = Buffer.from(body, 'utf8');
+            if (bytes.length <= maxBytes) return body;
+            const budget = maxBytes - Buffer.byteLength(suffix, 'utf8');
+            return bytes.subarray(0, budget).toString('utf8').replace(/\uFFFD+$/, '') + suffix;
+          };
+          for (const text of ['short review', 'a'.repeat(100000), '🔍'.repeat(25000)]) {
+            const result = clamp(prefix + text);
+            assert.ok(Buffer.byteLength(result, 'utf8') <= maxBytes, 'comment exceeds byte budget');
+            assert.ok(result.startsWith(marker), 'marker lost');
+            assert.ok(!result.includes('\uFFFD'), 'partial Unicode character');
+          }
+          console.log('Comment size dry-run passed (short, oversized ASCII, oversized Unicode).');
+          NODE
