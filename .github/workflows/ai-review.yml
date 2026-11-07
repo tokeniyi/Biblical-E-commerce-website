@@ -138,7 +138,7 @@ jobs:
             const coverage = partial
               ? `⚠️ Partial review: included ${included}/${files.length} changed files (50,000-character budget). Do not treat this as a complete review.`
               : `Reviewed patches for ${included}/${files.length} changed files; binary files may lack patches.`;
-            const body = [
+            let body = [
               marker,
               '## Kilo AI code review',
               `**Head commit:** \`${pr.head.sha}\``,
@@ -149,6 +149,23 @@ jobs:
               '',
               '_Automated advisory review only. This is not an approval or a substitute for CI and human review._'
             ].join('\n');
+
+            // GitHub issue comments allow at most 65,536 characters.
+            // Enforce a smaller UTF-8 byte budget, including headings and metadata.
+            const maxCommentBytes = 60000;
+            const encoded = Buffer.from(body, 'utf8');
+            if (encoded.length > maxCommentBytes) {
+              const suffix = '\\n\\n_[Review truncated to fit GitHub comment limits.]_';
+              const budget = maxCommentBytes - Buffer.byteLength(suffix, 'utf8');
+              let truncated = encoded.subarray(0, budget).toString('utf8');
+              // Avoid ending with a partial Unicode replacement character.
+              truncated = truncated.replace(/\\uFFFD+$/, '');
+              body = truncated + suffix;
+            }
+            if (Buffer.byteLength(body, 'utf8') > maxCommentBytes) {
+              core.setFailed('Review comment exceeds the configured size budget.');
+              return;
+            }
 
             // Update the existing bot comment rather than posting duplicates.
             const comments = await github.paginate(github.rest.issues.listComments, {
