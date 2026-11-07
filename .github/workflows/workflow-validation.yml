@@ -28,9 +28,9 @@ jobs:
           const assert = require('node:assert/strict');
           const source = fs.readFileSync('.github/workflows/ai-review.yml', 'utf8');
           // Guard against the original escaped-newline regression in production.
-          assert.ok(source.includes(String.raw`const suffix = '\\n\\n_[Review truncated to fit GitHub comment limits.]_';`),
+          assert.ok(source.includes(String.raw`const suffix = '\n\n_[Review truncated to fit GitHub comment limits.]_';`),
             'production workflow must use newline escapes, not literal backslash-n text');
-          assert.ok(!source.includes(String.raw`const suffix = '\\\\n\\\\n_[Review truncated to fit GitHub comment limits.]_';`),
+          assert.ok(!source.includes(String.raw`const suffix = '\\n\\n_[Review truncated to fit GitHub comment limits.]_';`),
             'production workflow has double-escaped newlines');
           const marker = '<!-- kilo-ai-review -->';
           const prefix = [marker, '## Kilo AI code review', '**Head commit:** abc', '**Model:** kilo-auto/free', 'Reviewed patches for 1/1 changed files.', ''].join('\n');
