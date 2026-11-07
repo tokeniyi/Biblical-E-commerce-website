@@ -24,7 +24,14 @@ jobs:
         shell: bash
         run: |
           node <<'NODE'
+          const fs = require('node:fs');
           const assert = require('node:assert/strict');
+          const source = fs.readFileSync('.github/workflows/ai-review.yml', 'utf8');
+          // Guard against the original escaped-newline regression in production.
+          assert.ok(source.includes(String.raw`const suffix = '\\n\\n_[Review truncated to fit GitHub comment limits.]_';`),
+            'production workflow must use newline escapes, not literal backslash-n text');
+          assert.ok(!source.includes(String.raw`const suffix = '\\\\n\\\\n_[Review truncated to fit GitHub comment limits.]_';`),
+            'production workflow has double-escaped newlines');
           const marker = '<!-- kilo-ai-review -->';
           const prefix = [marker, '## Kilo AI code review', '**Head commit:** abc', '**Model:** kilo-auto/free', 'Reviewed patches for 1/1 changed files.', ''].join('\n');
           const suffix = '\n\n_[Review truncated to fit GitHub comment limits.]_';
@@ -40,6 +47,13 @@ jobs:
             assert.ok(Buffer.byteLength(result, 'utf8') <= maxBytes, 'comment exceeds byte budget');
             assert.ok(result.startsWith(marker), 'marker lost');
             assert.ok(!result.includes('\uFFFD'), 'partial Unicode character');
+            if (Buffer.byteLength(prefix + text, 'utf8') > maxBytes) {
+              assert.ok(result.endsWith(suffix), 'truncation notice missing');
+              assert.ok(result.includes('\n\n_[Review truncated'), 'truncation notice must start on its own Markdown paragraph');
+              assert.ok(!result.includes('\\n\\n_[Review truncated'), 'literal backslash-n rendered');
+            } else {
+              assert.ok(!result.includes('Review truncated'), 'short comment should not be truncated');
+            }
           }
           console.log('Comment size dry-run passed (short, oversized ASCII, oversized Unicode).');
           NODE
