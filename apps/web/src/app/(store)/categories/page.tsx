@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import type { CategoryDirectory } from "@your-app/shared";
 import { PageContent } from "@/components/shell/StorefrontShell";
-import { BookCover } from "@/components/storefront/BookCover";
+import { CategoryArt } from "@/components/storefront/SceneArt";
 import { NetworkError } from "@/components/storefront/NetworkError";
 import { StatusMessage } from "@/components/ui/StatusMessage";
 import { panel, secondaryButton } from "@/components/ui/styles";
@@ -53,7 +53,7 @@ export default async function CategoriesPage() {
 
   return (
     <PageContent screen="C02">
-      <h1 className="text-[28px] font-semibold text-ink">Category directory</h1>
+      <h1 className="font-display text-3xl font-semibold tracking-tight text-ink">Category directory</h1>
       <p className="text-base">Start with how you’ll use your Bible, then narrow by translation and format.</p>
 
       {directory ? (
@@ -117,7 +117,10 @@ export default async function CategoriesPage() {
         </h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           {COLLECTIONS.map((c) => (
-            <BookCover key={c.label} label={c.label} heightClass="h-48" />
+            <div key={c.label} className="overflow-hidden rounded-xl">
+              <CategoryArt slug={c.href.split("/").pop() ?? "study"} className="h-48 w-full" />
+              <p className="bg-panel px-3 py-2 text-sm font-semibold">{c.label}</p>
+            </div>
           ))}
         </div>
         <ul className="flex flex-wrap gap-x-3 text-sm">
@@ -133,8 +136,7 @@ export default async function CategoriesPage() {
       </section>
 
       <StatusMessage title="Not sure where to start?">
-        Compare the translation and print-size specifications on each product page. Help content is managed in B12 /
-        B13.
+        Compare the translation and print-size specifications on each product page. Our translation guide explains the differences.
       </StatusMessage>
     </PageContent>
   );

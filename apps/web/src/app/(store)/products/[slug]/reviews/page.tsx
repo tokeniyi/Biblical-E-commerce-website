@@ -98,7 +98,7 @@ export default async function ReviewsPage({ params, searchParams }: Props) {
   if (!result) {
     return (
       <PageContent screen="C06">
-        <h1 className="text-[28px] font-semibold text-ink">Product reviews</h1>
+        <h1 className="font-display text-3xl font-semibold tracking-tight text-ink">Product reviews</h1>
         <NetworkError />
       </PageContent>
     );
@@ -114,10 +114,10 @@ export default async function ReviewsPage({ params, searchParams }: Props) {
 
   return (
     <PageContent screen="C06">
-      <h1 className="text-[28px] font-semibold text-ink">Product reviews</h1>
+      <h1 className="font-display text-3xl font-semibold tracking-tight text-ink">Product reviews</h1>
       <div className="flex flex-col gap-4 md:flex-row">
         <aside aria-label="Product" className="flex w-full flex-col gap-4 md:w-[270px] md:shrink-0">
-          <BookCover label={product.name} heightClass="h-[174px]" />
+          <BookCover title={product.name} binding={undefined} sizeClass="aspect-[3/4]" />
           <p className="text-base font-semibold">{product.name}</p>
           <p className="text-base">
             {formatCents(product.priceCents)} · {product.sku}

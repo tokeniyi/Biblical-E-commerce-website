@@ -47,7 +47,7 @@ export default async function CheckoutPaymentPage({ searchParams }: Props) {
   if (!view) {
     return (
       <PageContent screen={screen}>
-        <h1 className="text-[28px] font-semibold text-ink">{title}</h1>
+        <h1 className="font-display text-3xl font-semibold tracking-tight text-ink">{title}</h1>
         <NetworkError />
       </PageContent>
     );

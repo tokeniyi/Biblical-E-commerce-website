@@ -21,7 +21,7 @@ export default async function SavedForLaterPage() {
   const saved = await loadSaved();
   return (
     <PageContent screen="C08">
-      <h1 className="text-[28px] font-semibold text-ink">Saved for later</h1>
+      <h1 className="font-display text-3xl font-semibold tracking-tight text-ink">Saved for later</h1>
       <p className="text-base">These items are not included in your checkout total.</p>
       {saved ? <SavedItems items={saved} /> : <NetworkError />}
       <div className="flex flex-wrap items-center gap-3">

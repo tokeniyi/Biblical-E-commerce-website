@@ -73,3 +73,10 @@ export function requireCustomer(lookup: SessionLookup) {
   if (session.kind !== "customer") throw new MockApiError("unauthenticated", "Sign in with a customer account.");
   return session;
 }
+
+/** Staff-only reads (admin API). Customers get 403, signed-out visitors 401. */
+export function requireStaff(lookup: SessionLookup) {
+  const session = requireSession(lookup);
+  if (session.kind !== "staff") throw new MockApiError("forbidden", "Staff access is required.");
+  return session;
+}

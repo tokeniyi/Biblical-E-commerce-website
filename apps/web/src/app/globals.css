@@ -1,30 +1,124 @@
 @import "tailwindcss";
 
 /*
- * Low-fidelity wireframe palette taken from the Figma frames: grays only,
- * one accent for focus and one for destructive actions. State is never
- * conveyed by color alone - always pair it with text or an icon.
+ * Brand palette (docs/ECOMMERCE_BUILD_PLAN.md §2): warm paper, deep ink,
+ * oxblood primary and a gilt accent. Token names are the ones the wireframe
+ * used, so every component picks up the new look. State is never conveyed by
+ * color alone - always pair it with text or an icon.
  */
 @theme {
-  --color-ink: #202020;
-  --color-line: #999999;
-  --color-muted: #626262;
-  --color-panel: #f7f7f7;
-  --color-band: #e7e7e7;
-  --color-focus: #1d4ed8;
-  --color-danger: #b91c1c;
+  --color-ink: #1f2433;
+  --color-line: #e4ddd1;
+  --color-line-strong: #a89f90;
+  --color-muted: #625b50;
+  --color-panel: #f6f1e8;
+  --color-band: #ece5d8;
+  --color-paper: #fbf8f3;
+  --color-focus: #2f5da8;
+  --color-danger: #b42318;
+  --color-success: #2e6b3f;
+  --color-warning: #8a5a00;
+  --color-brand: #7a2e2e;
+  --color-brand-dark: #5c1f1f;
+  --color-brand-soft: #f4e7e3;
+  --color-gold: #a5814a;
+  --color-gold-soft: #f3ead9;
 
-  --font-sans: Inter, ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-inter), Inter, ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-fraunces), "Iowan Old Style", Georgia, serif;
   --font-mono: "Roboto Mono", ui-monospace, monospace;
+
+  --shadow-card: 0 1px 2px rgb(31 36 51 / 0.06), 0 4px 16px rgb(31 36 51 / 0.06);
+  --shadow-lift: 0 2px 4px rgb(31 36 51 / 0.08), 0 12px 32px rgb(31 36 51 / 0.12);
 }
 
 @layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
   body {
-    @apply bg-white font-sans text-black antialiased;
+    @apply bg-paper font-sans text-ink antialiased;
+  }
+
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
   }
 
   :focus-visible {
     outline: 2px solid var(--color-focus);
     outline-offset: 2px;
   }
+
+  ::selection {
+    background: var(--color-gold-soft);
+  }
+}
+
+/*
+ * Form controls: unlayered so they win over utility borders that older
+ * components still carry. Input borders keep >= 3:1 contrast (WCAG 1.4.11).
+ */
+:where(
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="hidden"]),
+    select,
+    textarea
+  ) {
+  border: 1px solid var(--color-line-strong);
+  border-radius: 8px;
+  background-color: #fff;
+  min-height: 2.5rem;
+  padding: 0.5rem 0.75rem;
+  transition:
+    border-color 120ms ease,
+    box-shadow 120ms ease;
+}
+
+:where(input, select, textarea):hover {
+  border-color: var(--color-muted);
+}
+
+:where(input, select, textarea):focus-visible {
+  outline: none;
+  border-color: var(--color-focus);
+  box-shadow: 0 0 0 3px rgb(47 93 168 / 0.2);
+}
+
+:where(input, select, textarea)[aria-invalid="true"] {
+  border-color: var(--color-danger);
+}
+
+:where(input[type="checkbox"], input[type="radio"]) {
+  accent-color: var(--color-brand);
+  width: 1rem;
+  height: 1rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0ms !important;
+    animation-duration: 0ms !important;
+  }
+}
+
+@keyframes slide-up {
+  from {
+    transform: translateY(16px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-up {
+  animation: slide-up 220ms ease-out both;
 }

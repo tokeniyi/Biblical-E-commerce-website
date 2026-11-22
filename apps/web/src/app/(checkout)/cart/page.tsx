@@ -12,7 +12,7 @@ export default async function CartPage() {
         <CartEditor initial={view} />
       ) : (
         <>
-          <h1 className="text-[28px] font-semibold text-ink">Your cart</h1>
+          <h1 className="font-display text-3xl font-semibold tracking-tight text-ink">Your cart</h1>
           <NetworkError />
         </>
       )}

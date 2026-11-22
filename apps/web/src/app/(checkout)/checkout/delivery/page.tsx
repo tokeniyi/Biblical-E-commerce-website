@@ -14,7 +14,7 @@ export default async function CheckoutDeliveryPage() {
   if (!view) {
     return (
       <PageContent screen="O03">
-        <h1 className="text-[28px] font-semibold text-ink">Contact &amp; delivery address</h1>
+        <h1 className="font-display text-3xl font-semibold tracking-tight text-ink">Contact &amp; delivery address</h1>
         <NetworkError />
       </PageContent>
     );

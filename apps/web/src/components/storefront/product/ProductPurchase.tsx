@@ -13,10 +13,12 @@ import {
   type Product,
   type Variant,
 } from "@your-app/shared";
-import { StatusMessage } from "@/components/ui/StatusMessage";
+import { Icon, Stars } from "@/components/ui/Icon";
 import { fieldBox, fieldLabel, panel, primaryButton } from "@/components/ui/styles";
+import { track } from "@/lib/analytics/tracker";
 import { ApiError, api } from "@/lib/api/client";
-import { BookCover } from "../BookCover";
+import { ProductGallery } from "../ProductGallery";
+import { StockBadge } from "../ProductCard";
 import { WishlistButton } from "../WishlistButton";
 import { AddedToCartDrawer, type DrawerState } from "./AddedToCartDrawer";
 import { SoldOutNotice, VariantUnavailableNotice } from "./VariantNotices";
@@ -37,6 +39,7 @@ type Props = {
   wishlist: string[];
   description: ReactNode;
   reviews: ReactNode;
+  heading?: ReactNode;
 };
 
 function unique(values: string[]): string[] {
@@ -62,7 +65,7 @@ function matches(v: Variant, s: Selection): boolean {
  * inline and the C07 drawer. The selected variant drives SKU, price and
  * stock; the server re-validates everything on add.
  */
-export function ProductPurchase({ product, category, initialSku, cart, drawerOpen, signedIn, wishlist, description, reviews }: Props) {
+export function ProductPurchase({ product, category, initialSku, cart, drawerOpen, signedIn, wishlist, description, reviews, heading }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const id = useId();
@@ -132,6 +135,7 @@ export function ProductPurchase({ product, category, initialSku, cart, drawerOpe
       const res = await api.cart.addLine({ sku: current.sku, quantity });
       setDrawer({ cart: res.cart, sku: res.added.sku, quantity: res.added.quantity });
       setAnnouncement(`Added ${product.name} to your cart.`);
+      track("add_to_cart", { sku: current.sku, quantity, priceCents: current.priceCents });
       router.replace(variantUrl(current.sku, true), { scroll: false });
       // Re-render server chrome so the header shows the new cart count.
       router.refresh();
@@ -156,29 +160,27 @@ export function ProductPurchase({ product, category, initialSku, cart, drawerOpe
 
   return (
     <>
-      <div className="flex flex-col gap-4 lg:flex-row">
-        <div className="flex w-full flex-col gap-4 lg:w-[384px] lg:shrink-0">
-          <BookCover label={`${product.name} / front cover`} heightClass="h-80" />
-          <div className="grid grid-cols-3 gap-4">
-            {["Back", "Pages", "Spine"].map((view) => (
-              <BookCover key={view} label={view} heightClass="h-[88px]" />
-            ))}
-          </div>
-        </div>
+      <div className="grid gap-8 lg:grid-cols-[minmax(0,460px)_1fr]">
+        <ProductGallery title={product.name} translation={shown?.translation ?? null} binding={shown?.binding} />
 
-        <div className="flex min-w-0 flex-1 flex-col gap-4">
-          <p className="text-base">
-            <Link href={`/products/${product.slug}/reviews`} className="hover:underline">
+        <div className="flex min-w-0 flex-col gap-5">
+          {heading}
+          <p className="flex flex-wrap items-center gap-2 text-sm">
+            {product.rating ? <Stars value={product.rating.average} /> : null}
+            <Link href={`/products/${product.slug}/reviews`} className="font-medium text-ink underline-offset-4 hover:underline">
               {product.rating
                 ? `${String(product.rating.average)} / 5 · ${String(product.rating.count)} verified reviews`
                 : "No reviews yet"}
             </Link>
           </p>
           {state !== "unavailable" && current ? (
-            <p className="text-[28px] font-semibold">{formatCents(current.priceCents)}</p>
+            <div className="flex flex-wrap items-center gap-3">
+              <p className="font-display text-4xl font-semibold text-ink">{formatCents(current.priceCents)}</p>
+              <StockBadge available={state === "available" ? available : 0} />
+            </div>
           ) : null}
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 rounded-2xl border border-line bg-white p-4 sm:grid-cols-3">
             {dimensions.map((d) => (
               <div key={d.key} className={fieldBox}>
                 <label htmlFor={`${id}-${d.key}`} className={fieldLabel}>
@@ -190,7 +192,7 @@ export function ProductPurchase({ product, category, initialSku, cart, drawerOpe
                   onChange={(e) => {
                     setDimension(d.key, e.target.value);
                   }}
-                  className="border border-line bg-white p-1"
+                  className="w-full"
                 >
                   {d.options.map((o) => (
                     <option key={o} value={o}>
@@ -204,18 +206,18 @@ export function ProductPurchase({ product, category, initialSku, cart, drawerOpe
 
           {state === "available" && current ? (
             <>
-              <p className="text-sm">
+              <p className="text-sm text-muted">
                 SKU {current.sku} · ISBN {current.isbn} · {available} available
               </p>
               <div className={fieldBox}>
                 <label htmlFor={`${id}-qty`} className={fieldLabel}>
                   Quantity
                 </label>
-                <div className="flex items-center gap-2">
+                <div className="flex w-fit items-center gap-1 rounded-full border border-line-strong bg-white p-1">
                   <button
                     type="button"
                     aria-label="Decrease quantity"
-                    className="border border-line px-2"
+                    className="grid h-9 w-9 place-items-center rounded-full text-lg hover:bg-band disabled:opacity-40"
                     disabled={quantity <= 1}
                     onClick={() => {
                       setQuantity((q) => clamp(q - 1));
@@ -234,12 +236,12 @@ export function ProductPurchase({ product, category, initialSku, cart, drawerOpe
                     onChange={(e) => {
                       setQuantity(clamp(e.target.valueAsNumber));
                     }}
-                    className="w-16 border border-line p-1 text-center"
+                    className="!min-h-9 w-14 !border-0 !p-1 text-center"
                   />
                   <button
                     type="button"
                     aria-label="Increase quantity"
-                    className="border border-line px-2"
+                    className="grid h-9 w-9 place-items-center rounded-full text-lg hover:bg-band disabled:opacity-40"
                     disabled={quantity >= available}
                     onClick={() => {
                       setQuantity((q) => clamp(q + 1));
@@ -257,10 +259,11 @@ export function ProductPurchase({ product, category, initialSku, cart, drawerOpe
                 <button
                   ref={addRef}
                   type="button"
-                  className={primaryButton}
+                  className={`${primaryButton} min-w-48 text-base`}
                   aria-disabled={busy || undefined}
                   onClick={() => void addToCart()}
                 >
+                  <Icon name="bag" className="h-5 w-5" />
                   {busy ? "Adding…" : "Add to cart"}
                 </button>
                 <WishlistButton
@@ -314,7 +317,7 @@ export function ProductPurchase({ product, category, initialSku, cart, drawerOpe
           ) : null}
 
           {error ? (
-            <p role="alert" className="border border-danger p-2 text-sm text-danger">
+            <p role="alert" className="rounded-xl border border-danger bg-brand-soft p-3 text-sm text-danger">
               {error}
             </p>
           ) : null}
@@ -322,25 +325,42 @@ export function ProductPurchase({ product, category, initialSku, cart, drawerOpe
             {announcement}
           </p>
 
-          <StatusMessage title="Shipping & returns">
-            Standard shipping {formatCents(SHIPPING_METHODS.standard.priceCents)} · estimate after address. Proposed:
-            unopened items may be returned within {RETURN_WINDOW_DAYS} days of delivery.{" "}
-            <Link href="/help/shipping-returns" className="underline">
-              See shipping &amp; returns
-            </Link>{" "}
-            for eligibility.
-          </StatusMessage>
+          <ul className="grid gap-3 rounded-2xl border border-line bg-white p-4 text-sm sm:grid-cols-3" aria-label="Shipping & returns">
+            <li className="flex items-start gap-2">
+              <Icon name="truck" className="mt-0.5 h-5 w-5 shrink-0 text-brand" />
+              <span>
+                <span className="block font-semibold">Standard shipping {formatCents(SHIPPING_METHODS.standard.priceCents)}</span>
+                <span className="text-muted">Delivery date shown at checkout</span>
+              </span>
+            </li>
+            <li className="flex items-start gap-2">
+              <Icon name="rotate" className="mt-0.5 h-5 w-5 shrink-0 text-brand" />
+              <span>
+                <span className="block font-semibold">{RETURN_WINDOW_DAYS}-day returns</span>
+                <span className="text-muted">On unopened items</span>
+              </span>
+            </li>
+            <li className="flex items-start gap-2">
+              <Icon name="shield" className="mt-0.5 h-5 w-5 shrink-0 text-brand" />
+              <span>
+                <span className="block font-semibold">Secure checkout</span>
+                <Link href="/help/shipping-returns" className="text-muted underline">
+                  See shipping &amp; returns
+                </Link>
+              </span>
+            </li>
+          </ul>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
         {description}
         <section aria-labelledby={`${id}-specs`} className={panel}>
-          <h2 id={`${id}-specs`} className="text-base font-semibold">
+          <h2 id={`${id}-specs`} className="font-display text-xl font-semibold">
             Specifications
           </h2>
           {shown ? (
-            <ul className="text-sm leading-snug">
+            <ul className="flex flex-col gap-1.5 text-sm leading-snug">
               <li>
                 Translation: {shown.translation} · {LANGUAGE_NAMES[product.language] ?? product.language}
               </li>

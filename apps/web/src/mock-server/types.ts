@@ -2,6 +2,9 @@
 // @your-app/shared; these add the server-only fields the real API will
 // keep in Postgres.
 import type {
+  AnalyticsEventType,
+  AnalyticsProps,
+  DeviceClass,
   Address,
   AddressInput,
   Cart,
@@ -96,6 +99,21 @@ export type PaymentIntentRecord = PaymentIntent & {
 /** Guest order-session (O08): the paying browser's cart token may read the order briefly. */
 export type OrderAccessGrant = { cartToken: string; orderId: string; expiresAt: string };
 
+/** One stored UX analytics event (only ever written with consent). */
+export type AnalyticsRecord = {
+  id: string;
+  visitorId: string;
+  sessionId: string;
+  device: DeviceClass;
+  type: AnalyticsEventType;
+  path: string;
+  /** Server-clamped event time, ms since epoch (real time, not the mock clock). */
+  at: number;
+  props: AnalyticsProps;
+  /** Seeded demo traffic, so the dashboard is meaningful on a fresh store. */
+  demo: boolean;
+};
+
 export type Db = {
   products: Product[];
   users: UserRecord[];
@@ -112,6 +130,7 @@ export type Db = {
   content: ContentPage[];
   stockAdjustments: StockAdjustment[];
   outbox: OutboxMessage[];
+  analyticsEvents: AnalyticsRecord[];
   /** One-shot scenario flags already fired (see lib/dev/scenario-defs.ts). */
   consumedOneShots: string[];
   /** Monotonic counter for generated ids, so ids stay stable across a run. */

@@ -9,7 +9,7 @@ export default async function InboxPage() {
 
   return (
     <>
-      <h1 className="text-[28px] font-semibold text-ink">Dev Inbox ({messages.length})</h1>
+      <h1 className="font-display text-3xl font-semibold tracking-tight text-ink">Dev Inbox ({messages.length})</h1>
       {messages.length === 0 ? (
         <p className="border border-line bg-panel p-4 text-sm">No messages yet.</p>
       ) : (

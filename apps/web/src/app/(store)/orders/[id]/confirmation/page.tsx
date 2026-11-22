@@ -32,7 +32,7 @@ export default async function OrderConfirmationPage({ params }: Props) {
   if (!data) {
     return (
       <PageContent screen="O08">
-        <h1 className="text-[28px] font-semibold text-ink">Order confirmed</h1>
+        <h1 className="font-display text-3xl font-semibold tracking-tight text-ink">Order confirmed</h1>
         <NetworkError />
       </PageContent>
     );
@@ -42,7 +42,7 @@ export default async function OrderConfirmationPage({ params }: Props) {
 
   return (
     <PageContent screen="O08">
-      <h1 className="text-[28px] font-semibold text-ink">Order confirmed</h1>
+      <h1 className="font-display text-3xl font-semibold tracking-tight text-ink">Order confirmed</h1>
       <ol aria-label="Checkout steps" className="flex flex-wrap gap-1 text-sm">
         {["Identity", "Delivery", "Payment", "Confirmation"].map((step, i) => (
           <li key={step} className="flex gap-1">

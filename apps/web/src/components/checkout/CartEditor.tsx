@@ -110,7 +110,7 @@ export function CartEditor({ initial }: { initial: CheckoutView }) {
 
   return (
     <>
-      <h1 ref={headingRef} tabIndex={-1} className="text-[28px] font-semibold text-ink">
+      <h1 ref={headingRef} tabIndex={-1} className="font-display text-3xl font-semibold tracking-tight text-ink">
         Your cart
       </h1>
       <p role="status" className="sr-only">

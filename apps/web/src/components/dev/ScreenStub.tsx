@@ -14,7 +14,7 @@ export function ScreenStub({ ids }: { ids: readonly string[] }) {
   return (
     <PageContent>
       <div data-screen={screens.map((s) => s.id).join(" ")} className="flex flex-col gap-4">
-        <h1 className="text-[28px] font-semibold text-ink">
+        <h1 className="font-display text-3xl font-semibold tracking-tight text-ink">
           {screens.map((s) => `${s.id} / ${s.name}`).join(" · ")}
         </h1>
         <div role="status" className="border border-line bg-panel p-4 text-sm">

@@ -7,7 +7,7 @@ const GROUPS: ScreenGroup[] = ["Customer", "Checkout & orders", "Account", "Admi
 export default function ScreensPage() {
   return (
     <>
-      <h1 className="text-[28px] font-semibold text-ink">Screens ({SCREENS.length})</h1>
+      <h1 className="font-display text-3xl font-semibold tracking-tight text-ink">Screens ({SCREENS.length})</h1>
       <p className="text-sm">
         Each row opens the live route with a fixture/scenario preset. Presets in the URL (
         <span className="font-mono">?scenario=…</span>) are stored in the scenario cookie.

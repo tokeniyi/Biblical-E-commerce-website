@@ -50,7 +50,7 @@ export default async function ProductPage({ params, searchParams }: Props) {
   if (!detail) {
     return (
       <PageContent screen="C05">
-        <h1 className="text-[28px] font-semibold text-ink">Bible details</h1>
+        <h1 className="font-display text-3xl font-semibold tracking-tight text-ink">Bible details</h1>
         <NetworkError />
       </PageContent>
     );
@@ -61,7 +61,6 @@ export default async function ProductPage({ params, searchParams }: Props) {
 
   return (
     <PageContent screen="C05">
-      <h1 className="text-[28px] font-semibold text-ink">{product.name}</h1>
       <Breadcrumbs
         crumbs={[
           { label: "Home", href: "/" },
@@ -77,17 +76,18 @@ export default async function ProductPage({ params, searchParams }: Props) {
         drawerOpen={first(sp.cart) === "added"}
         signedIn={viewer.kind === "customer"}
         wishlist={viewer.kind === "customer" ? viewer.wishlist : []}
+        heading={<h1 className="font-display text-3xl font-semibold tracking-tight text-ink sm:text-4xl">{product.name}</h1>}
         description={
           <section aria-labelledby="description-heading" className={panel}>
-            <h2 id="description-heading" className="text-base font-semibold">
+            <h2 id="description-heading" className="font-display text-xl font-semibold">
               Description
             </h2>
-            <p className="text-sm leading-snug">{product.description}</p>
+            <p className="text-sm leading-relaxed text-muted">{product.description}</p>
           </section>
         }
         reviews={
           <section aria-labelledby="reviews-heading" className={panel}>
-            <h2 id="reviews-heading" className="text-base font-semibold">
+            <h2 id="reviews-heading" className="font-display text-xl font-semibold">
               Customer reviews
             </h2>
             {topReview ? (

@@ -135,7 +135,7 @@ export default function StatesPage() {
   const rendered = EDGE_STATES.filter((s) => s.id in RENDERED);
   return (
     <>
-      <h1 className="text-[28px] font-semibold text-ink">Edge states ({EDGE_STATES.length})</h1>
+      <h1 className="font-display text-3xl font-semibold tracking-tight text-ink">Edge states ({EDGE_STATES.length})</h1>
       <p className="text-sm">
         {rendered.length} rendered below; the rest land in the phase shown in the table.
       </p>

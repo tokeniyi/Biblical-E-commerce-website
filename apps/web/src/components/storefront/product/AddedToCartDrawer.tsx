@@ -50,7 +50,7 @@ export function AddedToCartDrawer({ state, translation, onClose, fallbackFocusRe
             </div>
             <div className="flex gap-4">
               <div className="w-[100px] shrink-0">
-                <BookCover label={translation} heightClass="h-[134px]" />
+                <BookCover title={line.productName} translation={translation} decorative />
               </div>
               <div className="flex flex-col gap-4">
                 <p className="text-base font-semibold">{line.productName}</p>

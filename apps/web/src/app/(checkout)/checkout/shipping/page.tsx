@@ -15,7 +15,7 @@ export default async function CheckoutShippingPage() {
   if (!view) {
     return (
       <PageContent screen="O04">
-        <h1 className="text-[28px] font-semibold text-ink">Choose delivery method</h1>
+        <h1 className="font-display text-3xl font-semibold tracking-tight text-ink">Choose delivery method</h1>
         <NetworkError />
       </PageContent>
     );

@@ -1,5 +1,6 @@
 // DELETE-ME-LATER: fixtures that make the wireframes render as drawn (spec §6).
 import type { Address, ContentPage, Discount, Order, Product, Review, Variant } from "@your-app/shared";
+import { generateDemoTraffic } from "./services/analytics-demo";
 import type { CustomerRecord, Db, StaffRecord } from "./types";
 
 /** Shared mock password for every seeded account, so testers can sign in. */
@@ -418,6 +419,7 @@ export function createSeed(): Db {
     content: content(),
     stockAdjustments: [],
     outbox: [],
+    analyticsEvents: generateDemoTraffic(Date.now()),
     consumedOneShots: [],
     seq: 1000,
   };

@@ -17,7 +17,7 @@ export default async function CheckoutIdentityPage() {
   if (!view) {
     return (
       <PageContent screen="O02">
-        <h1 className="text-[28px] font-semibold text-ink">How would you like to check out?</h1>
+        <h1 className="font-display text-3xl font-semibold tracking-tight text-ink">How would you like to check out?</h1>
         <NetworkError />
       </PageContent>
     );

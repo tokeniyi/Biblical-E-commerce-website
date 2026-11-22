@@ -5,6 +5,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { ApiError, api } from "@/lib/api/client";
 import { textLink } from "@/components/ui/styles";
+import { track } from "@/lib/analytics/tracker";
 
 type WishlistButtonProps = {
   sku: string;
@@ -54,7 +55,7 @@ export function WishlistButton({ sku, productName, signedIn, saved: initiallySav
   if (saved) {
     return (
       <p className="text-sm">
-        <span>♥ Saved</span>
+        <span className="font-semibold text-brand">♥ Saved</span>
         <span className="sr-only"> {productName}</span>
         {" · "}
         <Link href="/account/wishlist" className="underline">
@@ -70,6 +71,7 @@ export function WishlistButton({ sku, productName, signedIn, saved: initiallySav
     try {
       await api.wishlist.add(sku);
       setSaved(true);
+      track("wishlist_add", { sku });
     } catch (e) {
       if (e instanceof ApiError && e.code === "session_expired") {
         router.push(loginHref(returnTo, "session-expired"));

@@ -50,7 +50,7 @@ export async function ListingPage({ basePath, category, query, title, crumbs, se
 
   return (
     <PageContent screen={category === null ? "C04" : "C03"}>
-      <h1 className="text-[28px] font-semibold text-ink">{title(result)}</h1>
+      <h1 className="font-display text-3xl font-semibold tracking-tight text-ink">{title(result)}</h1>
       <Breadcrumbs crumbs={crumbs(result)} />
       {searchBox}
       <ListingProvider basePath={basePath} query={shown}>

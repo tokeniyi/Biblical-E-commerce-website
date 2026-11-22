@@ -14,7 +14,7 @@ type CheckoutFrameProps = {
 export function CheckoutFrame({ screen, title, stepper, children, aside }: CheckoutFrameProps) {
   return (
     <PageContent screen={screen}>
-      <h1 className="text-[28px] font-semibold text-ink">{title}</h1>
+      <h1 className="font-display text-3xl font-semibold tracking-tight text-ink">{title}</h1>
       {stepper}
       <div className="flex flex-col gap-4 md:flex-row md:items-start">
         <div className="flex min-w-0 flex-1 flex-col gap-4">{children}</div>

@@ -33,7 +33,7 @@ type FieldProps = {
  */
 export function Field({ id, label, required, error, hint, children, className }: FieldProps) {
   return (
-    <div className={`${fieldBox} ${error ? "border-2 border-danger" : ""} ${className ?? ""}`}>
+    <div className={`${fieldBox} ${error ? "rounded-lg border-l-4 border-danger bg-brand-soft/40 py-2 pl-3" : ""} ${className ?? ""}`}>
       <label htmlFor={id} className={fieldLabel}>
         {label}
         {required ? " *" : ""}
@@ -41,7 +41,7 @@ export function Field({ id, label, required, error, hint, children, className }:
       {children}
       {hint && !error ? <p className="text-muted">{hint}</p> : null}
       {error ? (
-        <p id={errorId(id)} className="text-danger">
+        <p id={errorId(id)} className="font-medium text-danger">
           <span aria-hidden="true">! </span>
           {error}
         </p>
@@ -50,4 +50,4 @@ export function Field({ id, label, required, error, hint, children, className }:
   );
 }
 
-export const inputClass = "w-full border border-line bg-white p-1.5 text-sm aria-[invalid=true]:border-danger";
+export const inputClass = "w-full text-sm";
