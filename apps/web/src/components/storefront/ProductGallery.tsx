@@ -27,7 +27,7 @@ export function ProductGallery({ title, translation, binding }: { title: string;
             type="button"
             aria-pressed={active === view}
             aria-label={`Show ${label.toLowerCase()} view`}
-            onClick={() => setActive(view)}
+            onClick={() => { setActive(view); }}
             data-track={`gallery-${view}`}
             className="flex flex-col items-center gap-1 rounded-xl border-2 border-transparent p-1 text-xs font-medium text-muted hover:border-line aria-pressed:border-brand aria-pressed:text-ink"
           >

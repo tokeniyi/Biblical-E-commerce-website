@@ -19,3 +19,4 @@ export * from "./catalog.schema";
 export * from "./wishlist.schema";
 export * from "./checkout.schema";
 export * from "./analytics.schema";
+export * from "./account.schema";

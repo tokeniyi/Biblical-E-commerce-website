@@ -60,9 +60,9 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
     } else if (!globalPrivacyControl()) {
       setBannerOpen(true);
     }
-    const open = () => setBannerOpen(true);
+    const open = () => { setBannerOpen(true); };
     window.addEventListener(OPEN_CONSENT_EVENT, open);
-    return () => window.removeEventListener(OPEN_CONSENT_EVENT, open);
+    return () => { window.removeEventListener(OPEN_CONSENT_EVENT, open); };
   }, []);
 
   const decide = useCallback(
@@ -94,7 +94,7 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
   );
 
   const value = useMemo<ConsentContextValue>(
-    () => ({ choice, decide, openSettings: () => setBannerOpen(true) }),
+    () => ({ choice, decide, openSettings: () => { setBannerOpen(true); } }),
     [choice, decide],
   );
 
@@ -104,7 +104,7 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
       <Suspense fallback={null}>
         <NavigationTracker enabled={choice === "granted"} />
       </Suspense>
-      {bannerOpen ? <ConsentBanner choice={choice} onDecide={decide} onClose={() => setBannerOpen(false)} /> : null}
+      {bannerOpen ? <ConsentBanner choice={choice} onDecide={decide} onClose={() => { setBannerOpen(false); }} /> : null}
     </ConsentContext.Provider>
   );
 }
@@ -175,7 +175,7 @@ function NavigationTracker({ enabled }: { enabled: boolean }) {
       }
     };
     const onError = (event: ErrorEvent) => {
-      track("js_error", { message: String(event.message).slice(0, 120) });
+      track("js_error", { message: event.message.slice(0, 120) });
     };
     window.addEventListener("scroll", onScroll, { passive: true });
     document.addEventListener("click", onClick, { capture: true });

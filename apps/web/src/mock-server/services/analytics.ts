@@ -151,7 +151,7 @@ export function buildInsights(all: AnalyticsRecord[], query: InsightsQuery, now:
     const date = new Date(s.events[0]?.at ?? now).toISOString().slice(0, 10);
     const i = dailyIndex.get(date);
     if (i === undefined) continue;
-    const row = daily[i];
+    const row = daily.at(i);
     if (!row) continue;
     row.sessions += 1;
     if (purchasedSessions.includes(s)) row.purchases += 1;
@@ -186,13 +186,13 @@ export function buildInsights(all: AnalyticsRecord[], query: InsightsQuery, now:
       const stat = pageStat(page);
       stat.views += 1;
       stat.sessions.add(s.id);
-      const prev = s.views[i - 1];
+      const prev = i > 0 ? s.views.at(i - 1) : undefined;
       if (prev) {
         const from = pageGroup(prev.path);
         if (from !== page) bump(transitions, `${from}\u0000${page}`);
       }
     });
-    const first = s.views[0];
+    const first = s.views.at(0);
     const last = s.views.at(-1);
     if (first) bump(entries, pageGroup(first.path));
     if (last) {

@@ -5,6 +5,15 @@
  */
 import type { z } from "zod";
 import {
+  AccountOrderSchema,
+  AccountProfileSchema,
+  AdminOverviewSchema,
+  AccountOrdersSchema,
+  InsightsSchema,
+  WishlistItemsSchema,
+  type InsightsQuery,
+  type LoginInput,
+  type RegisterInput,
   CartMutationResponseSchema,
   CartViewSchema,
   CategoryDirectorySchema,
@@ -116,6 +125,20 @@ export function createApiClient(options: ApiClientOptions = {}) {
 
     getSession: () => request("/api/session", SessionResponseSchema),
     signOut: () => request("/api/session/logout", OkSchema, { method: "POST" }),
+    signIn: (input: LoginInput) => request("/api/session/login", OkSchema, { method: "POST", body: input }),
+    register: (input: RegisterInput) => request("/api/account/register", OkSchema, { method: "POST", body: input }),
+
+    account: {
+      orders: () => request("/api/account/orders", AccountOrdersSchema),
+      profile: () => request("/api/account/profile", AccountProfileSchema),
+      order: (id: string) => request(`/api/account/orders/${encodeURIComponent(id)}`, AccountOrderSchema),
+    },
+
+    admin: {
+      overview: () => request("/api/admin/overview", AdminOverviewSchema),
+      insights: (query: InsightsQuery) =>
+        request(`/api/admin/analytics?range=${query.range}&demo=${query.demo}`, InsightsSchema),
+    },
 
     catalog: {
       /** C03 with a category slug; C04 search with `category: null`. */
@@ -175,6 +198,9 @@ export function createApiClient(options: ApiClientOptions = {}) {
     wishlist: {
       get: () => request("/api/wishlist", WishlistSchema),
       add: (sku: string) => request("/api/wishlist", WishlistSchema, { method: "POST", body: { sku } }),
+      items: () => request("/api/wishlist/items", WishlistItemsSchema),
+      remove: (sku: string) =>
+        request(`/api/wishlist/${encodeURIComponent(sku)}`, WishlistItemsSchema, { method: "DELETE" }),
     },
 
     dev: {

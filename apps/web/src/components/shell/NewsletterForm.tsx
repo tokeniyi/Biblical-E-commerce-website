@@ -1,14 +1,15 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useState, type SubmitEvent } from "react";
 
 /** Demo newsletter sign-up: validates and confirms; no email is stored or sent. */
 export function NewsletterForm() {
   const [status, setStatus] = useState<"idle" | "error" | "done">("idle");
 
-  function onSubmit(event: FormEvent<HTMLFormElement>) {
+  function onSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
-    const email = String(new FormData(event.currentTarget).get("newsletter-email") ?? "");
+    const raw = new FormData(event.currentTarget).get("newsletter-email");
+    const email = typeof raw === "string" ? raw : "";
     setStatus(/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? "done" : "error");
   }
 

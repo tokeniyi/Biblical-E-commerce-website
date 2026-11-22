@@ -7,7 +7,7 @@ import { eyebrow, pageHeading, panel } from "@/components/ui/styles";
 
 type HelpPage = { title: string; intro: string; body: ReactNode };
 
-const PAGES: Record<string, HelpPage> = {
+const PAGES: Partial<Record<string, HelpPage>> = {
   "shipping-returns": {
     title: "Shipping & returns",
     intro: "Delivery options, costs and how returns work. Sample policy for this demo store.",
@@ -138,7 +138,7 @@ export default async function HelpContentPage({ params }: { params: Promise<{ sl
         <nav aria-label="Help topics" className={`${panel} self-start text-sm`}>
           <h2 className="font-semibold">Help topics</h2>
           <ul className="flex flex-col gap-2">
-            {Object.entries(PAGES).map(([s, p]) => (
+            {Object.entries(PAGES).map(([s, p]) => p && (
               <li key={s}>
                 <Link href={`/help/${s}`} aria-current={s === slug ? "page" : undefined} className="hover:text-brand aria-[current=page]:font-semibold aria-[current=page]:text-brand">
                   {p.title}

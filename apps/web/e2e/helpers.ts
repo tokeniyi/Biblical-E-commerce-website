@@ -1,12 +1,20 @@
 import { expect, type Page } from "@playwright/test";
 
 export const SCENARIO_COOKIE = "__scenario";
+export const CONSENT_COOKIE = "bs_consent";
+/** Same as playwright.config.ts. */
+export const BASE_URL = `http://localhost:${String(Number(process.env.E2E_PORT ?? 3100))}`;
 
 /** Reseed the mock store and clear this browser's cookies before a test. */
 export async function resetStore(page: Page): Promise<void> {
   const res = await page.request.post("/api/__dev/reset");
   expect(res.status()).toBe(200);
   await page.context().clearCookies();
+  // Answer the cookie banner up front ("analytics denied") so it never
+  // overlaps controls; consent specs clear this cookie themselves.
+  await page.context().addCookies([
+    { name: CONSENT_COOKIE, value: "v1.analytics-denied.1", url: BASE_URL },
+  ]);
 }
 
 export async function openDevTools(page: Page): Promise<void> {

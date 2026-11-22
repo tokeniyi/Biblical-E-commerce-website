@@ -97,7 +97,7 @@ export function track(type: AnalyticsEventType, props: AnalyticsProps = {}, path
   if (state.queue.length >= 20) {
     flush();
   } else if (!state.timer) {
-    state.timer = setTimeout(() => flush(), FLUSH_INTERVAL_MS);
+    state.timer = setTimeout(() => { flush(); }, FLUSH_INTERVAL_MS);
   }
 }
 

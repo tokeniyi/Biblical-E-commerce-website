@@ -33,7 +33,7 @@ const DAY_MS = 86_400_000;
 
 export function generateDemoTraffic(now: number, sessions = DEMO_SESSIONS, seed = 20261122): AnalyticsRecord[] {
   const rand = mulberry32(seed);
-  const pick = <T,>(xs: readonly T[]): T => xs[Math.floor(rand() * xs.length)] as T;
+  const pick = <T,>(xs: readonly T[]): T => xs[Math.floor(rand() * xs.length)];
   const records: AnalyticsRecord[] = [];
   let n = 0;
   const visitors = Array.from({ length: Math.round(sessions * 0.72) }, (_, i) => `demo-visitor-${String(i).padStart(4, "0")}`);
@@ -93,8 +93,10 @@ export function generateDemoTraffic(now: number, sessions = DEMO_SESSIONS, seed 
       if (results === 0 || rand() < 0.4) continue;
     }
 
-    // Product page.
-    if (rand() < 0.12) continue;
+    // Product page (landing visitors always see it; others sometimes leave first).
+    if (entry < 0.7 || entry >= 0.9) {
+      if (rand() < 0.12) continue;
+    }
     view(`/products/${product}`, { minScroll: 30, maxScroll: 95 });
     if (rand() < 0.3) push("dead_click", `/products/${product}`, { target: "Product image" });
     if (rand() < 0.35) {

@@ -5,12 +5,12 @@ import { serverApi } from "@/lib/api/server";
 import { NavLink } from "./NavLink";
 import { SignOutButton } from "./SignOutButton";
 import { Sidebar, SidebarList } from "./Sidebar";
-import { SiteFooter } from "./SiteFooter";
-import { SkipLink } from "./StorefrontShell";
+import { Logo, SkipLink } from "./StorefrontShell";
 
 /** Sidebar from Figma B02. */
 const ADMIN_NAV = [
   { href: "/admin", label: "Overview", matchPrefix: false },
+  { href: "/admin/insights", label: "UX insights", matchPrefix: true },
   { href: "/admin/products", label: "Products", matchPrefix: true },
   { href: "/admin/inventory", label: "Inventory", matchPrefix: true },
   { href: "/admin/orders", label: "Orders", matchPrefix: true },
@@ -46,36 +46,30 @@ export async function AdminShell({ children }: { children: ReactNode }) {
     session.kind === "staff" ? `Staff: ${session.name} · ${ROLE_LABELS[session.role]}` : "Not signed in as staff";
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-screen flex-col bg-paper">
       <SkipLink />
-      <header className="flex flex-col gap-2 border-b border-line px-6 py-3">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <Link href="/admin" className="text-xl font-semibold">
-            BIBLE STORE / ADMIN
+      <header className="border-b border-line bg-white">
+        <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-3">
+          <Link href="/admin" aria-label="Bible Store admin home">
+            <Logo suffix="Admin" />
           </Link>
           <div className="w-full sm:w-[360px]">
             <label htmlFor="admin-search" className="sr-only">
               Search admin records
             </label>
             {/* Destination not specified in Figma or the spec: open question. */}
-            <input
-              id="admin-search"
-              type="search"
-              placeholder="Search admin records…"
-              disabled
-              className="w-full border border-line p-2 text-sm disabled:bg-panel"
-            />
+            <input id="admin-search" type="search" placeholder="Search admin records…" disabled className="w-full text-sm disabled:bg-panel" />
           </div>
           <div className="flex items-center gap-4 text-sm">
-            <span>{staffLabel}</span>
+            <span className="rounded-full bg-panel px-3 py-1.5 font-medium">{staffLabel}</span>
             <SignOutButton redirectTo="/admin/login">Sign out</SignOutButton>
+            <Link href="/" className="text-muted hover:text-brand">
+              View store
+            </Link>
           </div>
         </div>
-        <p className="text-sm">
-          Protected /admin · staff role required · customer login does not grant access
-        </p>
       </header>
-      <div className="flex flex-1 flex-col md:flex-row">
+      <div className="flex flex-1 flex-col gap-6 p-4 md:flex-row md:p-6">
         <Sidebar
           label="Admin menu"
           note={<p className="leading-snug text-muted">Role permissions apply to every mutation.</p>}
@@ -92,7 +86,6 @@ export async function AdminShell({ children }: { children: ReactNode }) {
         </Sidebar>
         {children}
       </div>
-      <SiteFooter />
     </div>
   );
 }

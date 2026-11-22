@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { formatCents, type OrderConfirmation } from "@your-app/shared";
 import { DeliveryPanel } from "@/components/checkout/DeliveryDetails";
 import { OrderSummary } from "@/components/checkout/OrderSummary";
+import { TrackEvent } from "@/components/analytics/TrackEvent";
 import { PageContent } from "@/components/shell/StorefrontShell";
 import { NetworkError } from "@/components/storefront/NetworkError";
 import { StatusMessage } from "@/components/ui/StatusMessage";
@@ -42,6 +43,7 @@ export default async function OrderConfirmationPage({ params }: Props) {
 
   return (
     <PageContent screen="O08">
+      <TrackEvent type="purchase" onceKey={order.id} props={{ totalCents: order.totals.totalCents, items: order.lines.length }} />
       <h1 className="font-display text-3xl font-semibold tracking-tight text-ink">Order confirmed</h1>
       <ol aria-label="Checkout steps" className="flex flex-wrap gap-1 text-sm">
         {["Identity", "Delivery", "Payment", "Confirmation"].map((step, i) => (

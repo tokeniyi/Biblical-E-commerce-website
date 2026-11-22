@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
 import type { ListingQuery, ListingResponse } from "@your-app/shared";
+import { TrackEvent } from "@/components/analytics/TrackEvent";
 import { PageContent } from "@/components/shell/StorefrontShell";
 import { ApiError } from "@/lib/api/client";
 import { serverApi } from "@/lib/api/server";
@@ -53,6 +54,9 @@ export async function ListingPage({ basePath, category, query, title, crumbs, se
       <h1 className="font-display text-3xl font-semibold tracking-tight text-ink">{title(result)}</h1>
       <Breadcrumbs crumbs={crumbs(result)} />
       {searchBox}
+      {category === null && result && query.q ? (
+        <TrackEvent type="search" props={{ q: query.q.slice(0, 80), results: result.total }} />
+      ) : null}
       <ListingProvider basePath={basePath} query={shown}>
         <div className="flex flex-col gap-4 md:flex-row md:items-start">
           <FilterSidebar

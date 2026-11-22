@@ -59,28 +59,28 @@ export function ConsentBanner({ choice, onDecide, onClose }: ConsentBannerProps)
             </span>
           </label>
           <label className="flex items-start gap-3">
-            <input type="checkbox" checked={analytics} onChange={(e) => setAnalytics(e.target.checked)} className="mt-0.5" />
+            <input type="checkbox" checked={analytics} onChange={(e) => { setAnalytics(e.target.checked); }} className="mt-0.5" />
             <span>
               <span className="font-semibold">UX analytics</span>
               <span className="block text-muted">First-party cookies _bs_vid (180 days) and _bs_sid (30 minutes).</span>
             </span>
           </label>
-          <button type="button" className={choiceButton} onClick={() => onDecide(analytics ? "granted" : "denied")}>
+          <button type="button" className={choiceButton} onClick={() => { onDecide(analytics ? "granted" : "denied"); }}>
             Save choices
           </button>
         </fieldset>
       ) : null}
 
       <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-        <button type="button" className={choiceButton} onClick={() => onDecide("denied")}>
+        <button type="button" className={choiceButton} onClick={() => { onDecide("denied"); }}>
           Reject analytics
         </button>
-        <button type="button" className={choiceButton} onClick={() => onDecide("granted")}>
+        <button type="button" className={choiceButton} onClick={() => { onDecide("granted"); }}>
           Accept analytics
         </button>
       </div>
       {!customizing ? (
-        <button type="button" className="mt-3 text-sm font-medium text-ink underline underline-offset-4" onClick={() => setCustomizing(true)}>
+        <button type="button" className="mt-3 text-sm font-medium text-ink underline underline-offset-4" onClick={() => { setCustomizing(true); }}>
           Customize
         </button>
       ) : null}

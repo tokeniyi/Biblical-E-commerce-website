@@ -76,7 +76,8 @@ export function HeroArt({ className, label = "An open Bible on a reading desk be
   );
 }
 
-const CATEGORY_SCENES: Record<string, { bg: string; draw: () => React.ReactNode }> = {
+type Scene = { bg: string; draw: () => React.ReactNode };
+const CATEGORY_SCENES: Record<string, Scene | undefined> = {
   study: {
     bg: "#e7ebf3",
     draw: () => (
@@ -141,8 +142,8 @@ const CATEGORY_SCENES: Record<string, { bg: string; draw: () => React.ReactNode 
   },
 };
 
-CATEGORY_SCENES["family-reading"] = CATEGORY_SCENES.children ?? CATEGORY_SCENES.study!;
-CATEGORY_SCENES.bibles = CATEGORY_SCENES.devotional ?? CATEGORY_SCENES.study!;
+CATEGORY_SCENES["family-reading"] = CATEGORY_SCENES.children;
+CATEGORY_SCENES.bibles = CATEGORY_SCENES.devotional;
 
 export function hasCategoryArt(slug: string): boolean {
   return slug in CATEGORY_SCENES;

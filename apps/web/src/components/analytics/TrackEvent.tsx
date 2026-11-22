@@ -21,8 +21,8 @@ export function TrackEvent({ type, props, onceKey }: { type: AnalyticsEventType;
       }
     }
     // Let the page_view for this route go first.
-    const id = window.setTimeout(() => track(type, JSON.parse(serialized) as AnalyticsProps), 50);
-    return () => window.clearTimeout(id);
+    const id = window.setTimeout(() => { track(type, JSON.parse(serialized) as AnalyticsProps); }, 50);
+    return () => { window.clearTimeout(id); };
   }, [type, serialized, onceKey]);
   return null;
 }

@@ -20,7 +20,7 @@ export function describeTarget(el: Element): string {
   }
   const aria = el.getAttribute("aria-label");
   if (aria) return scrubText(aria, 60);
-  const text = el.textContent ?? "";
+  const text = el.textContent;
   if (text.trim()) return scrubText(text, 60);
   return el.tagName.toLowerCase();
 }
