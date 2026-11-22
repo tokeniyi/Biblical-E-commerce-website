@@ -62,9 +62,9 @@ export default async function OrderConfirmationPage({ params }: Props) {
         sent to {order.email}.
       </StatusMessage>
 
-      <div className="overflow-x-auto border border-line">
-        <table className="w-full min-w-[560px] text-left font-mono text-[13px] leading-snug">
-          <thead className="bg-band">
+      <div className="overflow-x-auto rounded-2xl border border-line bg-white shadow-card">
+        <table className="w-full min-w-[560px] text-left text-sm leading-snug">
+          <thead className="bg-panel text-xs uppercase tracking-wide text-muted">
             <tr>
               <th scope="col" className="p-3 font-semibold">Purchased item</th>
               <th scope="col" className="p-3 font-semibold">SKU</th>
@@ -74,7 +74,7 @@ export default async function OrderConfirmationPage({ params }: Props) {
           </thead>
           <tbody>
             {lines.map((l) => (
-              <tr key={l.sku} className="border-t border-band align-top">
+              <tr key={l.sku} className="border-t border-line align-top">
                 <th scope="row" className="p-3 font-normal">
                   {l.productName} · {l.variantLabel}
                 </th>

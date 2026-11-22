@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { BookCover } from "@/components/storefront/BookCover";
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 import { TAX_RATE_BPS, formatCents, type CartLineView, type CheckoutView } from "@your-app/shared";
@@ -14,7 +15,7 @@ import { CartChanges } from "./CartChanges";
 import { EmptyCart } from "./EdgeStates";
 import { OrderSummary } from "./OrderSummary";
 
-const stepButton = "inline-flex h-8 w-8 items-center justify-center border border-ink bg-white disabled:border-line disabled:text-muted";
+const stepButton = "inline-flex h-8 w-8 items-center justify-center rounded-full border border-line-strong bg-white hover:border-ink disabled:border-line disabled:text-muted";
 
 function itemsLabel(n: number): string {
   return `${String(n)} ${n === 1 ? "item" : "items"}`;
@@ -124,9 +125,9 @@ export function CartEditor({ initial }: { initial: CheckoutView }) {
           <div className="flex min-w-0 flex-1 flex-col gap-4">
             {blocked && reconciledQuote ? <CartChanges changes={changes} reconciled={reconciledQuote} /> : null}
 
-            <div className="overflow-x-auto border border-line">
-              <table className="w-full min-w-[640px] text-left font-mono text-[13px] leading-snug">
-                <thead className="bg-band">
+            <div className="overflow-x-auto rounded-2xl border border-line bg-white shadow-card">
+              <table className="w-full min-w-[640px] text-left text-sm leading-snug">
+                <thead className="bg-panel text-xs uppercase tracking-wide text-muted">
                   <tr>
                     <th scope="col" className="p-3 font-semibold">Bible / variant</th>
                     <th scope="col" className="p-3 font-semibold">Unit price</th>
@@ -139,12 +140,17 @@ export function CartEditor({ initial }: { initial: CheckoutView }) {
                     const busy = busySku === line.sku;
                     const max = Math.max(line.available, 1);
                     return (
-                      <tr key={line.sku} className="border-t border-band align-top">
+                      <tr key={line.sku} className="border-t border-line align-top">
                         <th scope="row" className="p-3 font-normal">
-                          <Link href={`/products/${line.productSlug}?variant=${encodeURIComponent(line.sku)}`} className="underline">
+                          <div className="flex gap-3">
+                          <div className="w-14 shrink-0">
+                            <BookCover title={line.productName} binding={line.variantLabel.split(" / ")[0]} decorative sizeClass="aspect-[3/4]" />
+                          </div>
+                          <div>
+                          <Link href={`/products/${line.productSlug}?variant=${encodeURIComponent(line.sku)}`} className="font-semibold text-ink hover:text-brand">
                             {line.productName}
                           </Link>
-                          <div>
+                          <div className="text-muted">
                             {line.sku} · {line.variantLabel.split(" / ")[0]}
                           </div>
                           <div className="mt-1 flex gap-1 font-sans text-sm">
@@ -167,6 +173,8 @@ export function CartEditor({ initial }: { initial: CheckoutView }) {
                             >
                               Save
                             </button>
+                          </div>
+                          </div>
                           </div>
                         </th>
                         <td className="p-3">{formatCents(line.unitPriceCents)}</td>
@@ -245,7 +253,7 @@ export function CartEditor({ initial }: { initial: CheckoutView }) {
                     ref={promoRef}
                     id="promo-code"
                     name="code"
-                    className="w-full border border-line p-1.5"
+                    className="w-full"
                     placeholder="Enter promo code"
                     autoComplete="off"
                     value={code}
@@ -324,7 +332,7 @@ export function CartEditor({ initial }: { initial: CheckoutView }) {
         labelledBy={dialogTitleId}
         initialFocusRef={keepRef}
         fallbackFocusRef={headingRef}
-        className="m-auto w-[min(520px,calc(100vw-2rem))] border border-ink p-0 backdrop:bg-black/40"
+        className="m-auto w-[min(520px,calc(100vw-2rem))] rounded-2xl border border-line p-2 shadow-lift backdrop:bg-ink/50"
       >
         <div className="flex flex-col gap-3 p-4">
           <h2 id={dialogTitleId} className="text-base font-semibold">
@@ -334,7 +342,7 @@ export function CartEditor({ initial }: { initial: CheckoutView }) {
           <div className="flex flex-wrap gap-3">
             <button
               type="button"
-              className="inline-flex min-h-10 items-center rounded-[3px] border border-danger bg-danger px-4 py-2.5 text-sm font-semibold text-white"
+              className="inline-flex min-h-11 items-center rounded-full border border-danger bg-danger px-5 py-2.5 text-sm font-semibold text-white"
               onClick={() => void remove()}
             >
               Remove

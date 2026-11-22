@@ -138,3 +138,37 @@ Exit criteria: `pnpm lint`, `pnpm typecheck`, `pnpm test`, and the Playwright su
 - Real payment providers, real email, real CMS/search (unchanged plan in `ARCHITECTURE.md`).
 - Post-purchase O09–O13 and admin editing screens B03–B13 beyond the read views above remain stubs.
 - Real photography: SVG art is a placeholder.
+
+---
+
+## 6. Delivered (22 Nov 2026)
+
+| Area | Result |
+|---|---|
+| Visual system | Brand tokens in `globals.css` (paper / ink / oxblood / gilt), Fraunces + Inter via `next/font`, restyled primitives in `components/ui/styles.ts`, icon set `components/ui/Icon.tsx`. |
+| Demo imagery | `components/storefront/BookCover.tsx` (front / back / spine / pages SVG views per product), `SceneArt.tsx` (hero and category illustrations), palette logic in `lib/imagery.ts`. |
+| Storefront | New header (announcement bar, search, account/wishlist/cart badge, category nav), footer (newsletter, help, cookie settings), home page, product cards, product page with gallery + trust row, help/policy pages (`/help/shipping-returns`, `/help/translations`, `/help/privacy`, `/help/terms`). |
+| Accounts | `/login`, `/register`, `/admin/login`, `/account` (overview), `/account/orders`, `/account/orders/[id]` (timeline), `/account/wishlist`, `/account/profile`, `/account/addresses`, `/account/reviews`. |
+| Admin | `/admin` overview (sales tiles, recent orders, low stock, top UX findings), `/admin/insights` dashboard. |
+| Analytics | Shared contract `packages/shared/src/schemas/analytics.schema.ts`; consent + tracker in `src/lib/analytics/*` and `src/components/analytics/*`; ingest, erase and report routes under `src/app/api/analytics/*` and `src/app/api/admin/analytics`; aggregation and recommendations in `src/mock-server/services/analytics.ts`; seeded demo traffic in `analytics-demo.ts`. |
+| Tests | Unit: web 173 (+34: analytics, account), shared 48. Playwright: 61 (+8 in `e2e/journey.e2e.ts`); existing specs updated for the new copy. |
+
+### How to try it
+
+```bash
+pnpm install
+pnpm --filter web dev        # http://localhost:3000, mock tools on in dev
+```
+
+1. Accept the cookie banner, browse a category, open a product, add to cart, check out as a guest
+   (card `4242 4242 4242 4242`, any future expiry, any CVC).
+2. Sign in at `/admin/login` as `alex@store.example` / `wireframe-password`, open **UX insights**,
+   tick **Live visitors only** to see just your session (funnel, paths, clicks, scroll).
+3. Customer account: `jordan@example.com` / `wireframe-password`, or register a new one.
+4. Footer → **Cookie settings** → Reject withdraws consent and erases your recorded events.
+
+### Known limitations
+- Analytics events live in the in-memory mock store (reset with the dev toolbar); the real API
+  needs an `analytics_events` table with the same shape and a retention job.
+- Demo traffic is synthetic and clearly flagged (`demo: true`); exclude it with the dashboard toggle.
+- Post-purchase (O09–O13), address editing and admin editing screens (B03–B13) are still stubs.

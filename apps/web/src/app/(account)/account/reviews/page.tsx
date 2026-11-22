@@ -12,7 +12,7 @@ export default async function ReviewsPage() {
   const { api } = await requireCustomerPage("/account/reviews");
   const { reviews } = await api.account.profile();
   return (
-    <PageContent>
+    <PageContent screen="A13">
       <h1 className={pageHeading}>Your reviews</h1>
       {reviews.length === 0 ? (
         <p className={panel}>You haven’t written any reviews yet. Delivered items can be reviewed from your orders.</p>

@@ -23,7 +23,7 @@ export default async function LoginPage({ searchParams }: Props) {
   const reason = first(sp.reason);
   const registerHref = returnTo ? `/register?returnTo=${encodeURIComponent(returnTo)}` : "/register";
   return (
-    <PageContent screen="A01">
+    <PageContent screen={reason === "session-expired" || reason === "required" ? "A01 A14" : "A01"}>
       <AuthCard
         kicker="Welcome back"
         title="Sign in"

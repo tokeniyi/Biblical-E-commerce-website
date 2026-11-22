@@ -70,9 +70,9 @@ export function SavedItems({ items }: { items: SavedItemView[] }) {
       {items.length === 0 ? (
         <p className="text-base">You have no saved items.</p>
       ) : (
-        <div className="overflow-x-auto border border-line">
-          <table className="w-full min-w-[640px] text-left font-mono text-[13px] leading-snug">
-            <thead className="bg-band">
+        <div className="overflow-x-auto rounded-2xl border border-line bg-white shadow-card">
+          <table className="w-full min-w-[640px] text-left text-sm leading-snug">
+            <thead className="bg-panel text-xs uppercase tracking-wide text-muted">
               <tr>
                 <th scope="col" className="p-3 font-semibold">Saved Bible</th>
                 <th scope="col" className="p-3 font-semibold">Variant / SKU</th>
@@ -82,7 +82,7 @@ export function SavedItems({ items }: { items: SavedItemView[] }) {
             </thead>
             <tbody>
               {items.map((item) => (
-                <tr key={item.sku} className="border-t border-band align-top">
+                <tr key={item.sku} className="border-t border-line align-top">
                   <th scope="row" className="p-3 font-normal">
                     {item.productName}
                   </th>

@@ -232,7 +232,7 @@ function Report({ data }: { data: Insights }) {
           <h2 id="entry-heading" className="font-display text-xl font-semibold">
             Entry, exit &amp; devices
           </h2>
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-4">
             <Table caption="Entry pages" head={["Entry page", "Sessions"]} rows={data.entryPages.map((e) => [e.page, String(e.count)])} />
             <Table caption="Exit pages" head={["Exit page", "Sessions"]} rows={data.exitPages.map((e) => [e.page, String(e.count)])} />
           </div>

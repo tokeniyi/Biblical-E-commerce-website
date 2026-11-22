@@ -211,7 +211,7 @@ export function PaymentForm({ totalCents, defaultName, blocked }: PaymentFormPro
           {text("cardName", "Cardholder name", "cc-name")}
         </div>
         <p id="no-integration" className="text-sm">
-          No real payment integration in this wireframe.
+          Demo store: payments are simulated. Use test card 4242 4242 4242 4242 — never a real card.
         </p>
       </fieldset>
 

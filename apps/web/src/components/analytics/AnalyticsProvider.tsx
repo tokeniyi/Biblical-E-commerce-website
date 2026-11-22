@@ -174,17 +174,24 @@ function NavigationTracker({ enabled }: { enabled: boolean }) {
         page.current = { ...page.current, startedAt: Date.now(), left: false };
       }
     };
+    // Full-page navigations and tab closes: send what is queued.
+    const onPageHide = () => {
+      leavePage();
+      flush(true);
+    };
     const onError = (event: ErrorEvent) => {
       track("js_error", { message: event.message.slice(0, 120) });
     };
     window.addEventListener("scroll", onScroll, { passive: true });
     document.addEventListener("click", onClick, { capture: true });
     document.addEventListener("visibilitychange", onHidden);
+    window.addEventListener("pagehide", onPageHide);
     window.addEventListener("error", onError);
     return () => {
       window.removeEventListener("scroll", onScroll);
       document.removeEventListener("click", onClick, { capture: true });
       document.removeEventListener("visibilitychange", onHidden);
+      window.removeEventListener("pagehide", onPageHide);
       window.removeEventListener("error", onError);
     };
   }, [enabled, leavePage]);

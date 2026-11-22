@@ -11,7 +11,7 @@ export const metadata = { title: "Admin" };
 /** B02 Admin overview: sales snapshot plus the top UX findings. */
 export default async function AdminOverviewPage() {
   const staff = await loadStaff();
-  if (!staff) return <StaffOnly title="Admin overview" returnTo="/admin" />;
+  if (!staff) return <StaffOnly title="Admin overview" returnTo="/admin" screen="B02" />;
   const api = await serverApi();
   const [overview, insights]: [AdminOverview, Insights] = await Promise.all([
     api.admin.overview(),

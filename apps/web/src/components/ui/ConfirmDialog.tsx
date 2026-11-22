@@ -40,7 +40,7 @@ export function ConfirmDialog({
       labelledBy={titleId}
       initialFocusRef={cancelRef}
       fallbackFocusRef={fallbackFocusRef}
-      className="m-auto w-[min(520px,calc(100vw-2rem))] border border-ink p-0 backdrop:bg-black/40"
+      className="m-auto w-[min(520px,calc(100vw-2rem))] rounded-2xl border border-line p-2 shadow-lift backdrop:bg-ink/50"
     >
       <div className="flex flex-col gap-3 p-4">
         <h2 id={titleId} className="text-base font-semibold">
@@ -50,7 +50,7 @@ export function ConfirmDialog({
         <div className="flex flex-wrap gap-3">
           <button
             type="button"
-            className="inline-flex min-h-10 items-center rounded-[3px] border border-danger bg-danger px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
+            className="inline-flex min-h-11 items-center rounded-full border border-danger bg-danger px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
             disabled={busy}
             onClick={onConfirm}
           >

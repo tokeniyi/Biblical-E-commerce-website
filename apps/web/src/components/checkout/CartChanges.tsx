@@ -62,9 +62,9 @@ export function CartChanges({ changes, reconciled, interactive = true }: CartCha
       <h2 id="cart-changes-title" className="text-[22px] font-semibold">
         Review changes before paying
       </h2>
-      <div className="overflow-x-auto border border-line">
-        <table className="w-full min-w-[520px] text-left font-mono text-[13px]">
-          <thead className="bg-band">
+      <div className="overflow-x-auto rounded-2xl border border-line bg-white shadow-card">
+        <table className="w-full min-w-[520px] text-left text-sm leading-snug">
+          <thead className="bg-panel text-xs uppercase tracking-wide text-muted">
             <tr>
               <th scope="col" className="p-3 font-semibold">Variant</th>
               <th scope="col" className="p-3 font-semibold">Cart</th>

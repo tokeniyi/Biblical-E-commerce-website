@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import {
+  BASE_URL,
   SCENARIO_COOKIE,
   chooseInToolbar,
   getDevState,
@@ -10,6 +11,8 @@ import {
   scenarioCookie,
 } from "./helpers";
 
+const HOME_HEADING = "The Bible you’ll reach for every day.";
+
 test.beforeEach(async ({ page }) => {
   await resetStore(page);
 });
@@ -17,28 +20,32 @@ test.beforeEach(async ({ page }) => {
 test.describe("app boots and shells render", () => {
   test("home renders the storefront shell", async ({ page }) => {
     await page.goto("/");
-    await expect(page.getByRole("heading", { level: 1, name: "Home" })).toBeVisible();
-    await expect(page.getByRole("link", { name: "BIBLE STORE" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: HOME_HEADING })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Bible Store home" })).toBeVisible();
     await expect(page.getByRole("searchbox", { name: "Search Bibles" })).toBeVisible();
     await expect(page.getByRole("link", { name: "Cart (0)" })).toBeVisible();
     const primary = page.getByRole("navigation", { name: "Primary" });
     await expect(primary.getByRole("link", { name: "Home" })).toHaveAttribute("aria-current", "page");
-    await expect(page.getByRole("contentinfo")).toContainText("Wireframe only");
+    await expect(page.getByRole("contentinfo")).toContainText("Demo storefront with sample data");
   });
 
   test("account pages use the account sidebar", async ({ page }) => {
     await page.goto("/account");
-    await expect(page.getByRole("heading", { level: 1, name: "A07 / Account overview" })).toBeVisible();
+    // Signed out: A14 sign-in required, with returnTo.
+    await expect(page).toHaveURL("/login?reason=required&returnTo=%2Faccount");
+    await chooseInToolbar(page, "Identity", "customer");
+    await page.goto("/account");
+    await expect(page.getByRole("heading", { level: 1, name: "Hello, Jordan" })).toBeVisible();
     const menu = page.getByRole("navigation", { name: "Account menu" });
     await menu.getByRole("link", { name: "Orders" }).click();
     await expect(page).toHaveURL("/account/orders");
-    await expect(page.getByRole("heading", { level: 1, name: "A10 / Orders" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: "Orders" })).toBeVisible();
     await expect(menu.getByRole("link", { name: "Orders" })).toHaveAttribute("aria-current", "page");
   });
 
   test("admin pages use the separate admin shell", async ({ page }) => {
     await page.goto("/admin");
-    await expect(page.getByRole("link", { name: "BIBLE STORE / ADMIN" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Bible Store admin home" })).toBeVisible();
     await expect(page.getByText("Not signed in as staff")).toBeVisible();
     const menu = page.getByRole("navigation", { name: "Admin menu" });
     await menu.getByRole("link", { name: "Products" }).click();
@@ -60,8 +67,8 @@ test.describe("basic navigation", () => {
       { link: "Categories", url: "/categories", heading: "Category directory" },
       { link: "Study Bibles", url: "/categories/study", heading: "Study Bibles" },
       { link: "Children", url: "/categories/children", heading: "Children’s Bibles" },
-      { link: "Help", url: "/help/shipping-returns", heading: "Help" },
-      { link: "Home", url: "/", heading: "Home" },
+      { link: "Help", url: "/help/shipping-returns", heading: "Shipping & returns" },
+      { link: "Home", url: "/", heading: HOME_HEADING },
     ];
     for (const c of cases) {
       await primary.getByRole("link", { name: c.link, exact: true }).click();
@@ -176,7 +183,7 @@ test.describe("dev toolbar drives the mock server", () => {
 });
 
 test.describe("dev pages", () => {
-  test("/__dev/screens lists all 48 screens and every route serves its screen", async ({ page }) => {
+  test("/__dev/screens lists all 48 screens and every route serves its screen", async ({ page, browser }) => {
     test.setTimeout(600_000);
     await page.goto("/__dev/screens");
     await expect(page.getByRole("heading", { level: 1, name: "Screens (48)" })).toBeVisible();
@@ -192,13 +199,19 @@ test.describe("dev pages", () => {
       })),
     );
     expect(new Set(links.map((l) => l.id)).size).toBe(48);
+    // Account screens need a signed-in customer (signed out they redirect to A01/A14).
+    const customer = await browser.newContext({ baseURL: BASE_URL });
+    expect((await customer.request.post("/api/__dev/identity", { data: { identity: "customer" } })).status()).toBe(200);
+    const signedOutAccount = new Set(["A01", "A02", "A03", "A04", "A05", "A06", "A14"]);
     for (const { id, href, form } of links) {
       const target = form ?? href ?? "";
-      const res = form ? await page.request.post(form) : await page.request.get(target);
+      const client = id.startsWith("A") && !signedOutAccount.has(id) ? customer.request : page.request;
+      const res = form ? await client.post(form) : await client.get(target);
       expect(res.status(), `${id} ${target}`).toBe(200);
       // Built screens carry data-screen; stubs still show "ID / Name".
       expect(await res.text(), `${id} ${target}`).toMatch(new RegExp(`data-screen="[^"]*\\b${id}\\b|${id} / `));
     }
+    await customer.close();
   });
 
   test("/__dev/states lists E01 to E25", async ({ page }) => {

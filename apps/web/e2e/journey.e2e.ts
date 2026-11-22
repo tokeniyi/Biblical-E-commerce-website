@@ -106,6 +106,8 @@ test.describe("full shopping journey", () => {
     await page.getByRole("searchbox", { name: "Search Bibles" }).fill("amplified");
     await page.keyboard.press("Enter");
     await expect(page).toHaveURL("/search?q=amplified");
+    await expect(page.getByRole("heading", { level: 1, name: "Search results" })).toBeVisible();
+    await page.waitForTimeout(300);
 
     await page.goto("/");
     await page.getByRole("link", { name: "Browse Study Bibles" }).click();
