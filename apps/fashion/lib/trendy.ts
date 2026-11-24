@@ -28,12 +28,51 @@ export type Product = {
   colours: readonly Colour[];
 };
 
-export const edit: readonly Product[] = instagramProducts.map((product) => ({
-  price: 0,
-  terms: "enquiry",
-  sizes: [],
-  ...product,
-}));
+// Demonstration prices, sizes and inventory. Replace with merchant-approved data before launch.
+const demoStock: Record<string, { price: number; sizes: string[]; stock: number[][] }> = {
+  "black-script-tee": { price: 2500000, sizes: ["S", "M", "L", "XL"], stock: [[3, 4, 4, 2]] },
+  "layered-panel-sneakers": {
+    price: 6500000,
+    sizes: ["EU 40", "EU 41", "EU 42", "EU 43", "EU 44"],
+    stock: [
+      [2, 2, 3, 1, 1],
+      [1, 2, 2, 2, 1],
+    ],
+  },
+};
+
+export const edit: readonly Product[] = instagramProducts.map((product) => {
+  const demo = demoStock[product.slug];
+  return {
+    ...product,
+    price: demo?.price ?? 0,
+    terms: demo ? "negotiable" : "enquiry",
+    sizes: demo?.sizes ?? [],
+    colours: product.colours.map((colour, index) => ({
+      ...colour,
+      stock: demo?.stock[index] ?? colour.stock,
+    })),
+  };
+});
+
+export function trendyVariantId(slug: string, colour: string, size: string) {
+  return `tl:${slug}:${colour}:${size}`;
+}
+
+export const trendyVariants = edit
+  .filter((product) => product.price > 0)
+  .flatMap((product) =>
+    product.colours.flatMap((colour) =>
+      product.sizes.map((size, index) => ({
+        id: trendyVariantId(product.slug, colour.name, size),
+        name: product.name,
+        colour: colour.name,
+        size,
+        price: product.price,
+        quantity: colour.stock[index] ?? 0,
+      })),
+    ),
+  );
 
 export const featured = [
   "green-contrast-jersey",

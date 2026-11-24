@@ -800,3 +800,37 @@ body.trendy {
     transition: none;
   }
 }
+
+.tl-checkout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.8fr);
+  align-items: start;
+  gap: clamp(1rem, 5vw, 4rem);
+}
+
+.tl-checkout form,
+.tl-checkout label,
+.tl-checkout .tl-summary {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.tl-checkout form {
+  gap: 1rem;
+}
+
+.tl-checkout input,
+.tl-checkout select,
+.tl-checkout textarea {
+  min-height: 44px;
+  padding: 0.6rem;
+  border: 1px solid var(--line);
+  background: var(--white);
+  font: inherit;
+}
+
+@media (max-width: 700px) {
+  .tl-checkout {
+    grid-template-columns: 1fr;
+  }
+}

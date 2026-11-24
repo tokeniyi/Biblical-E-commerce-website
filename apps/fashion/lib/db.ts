@@ -1,5 +1,8 @@
 import { Pool, type PoolClient } from "pg";
 import { variants } from "./catalog";
+import { trendyVariants } from "./trendy";
+
+const inventory = [...variants, ...trendyVariants];
 
 let pool: Pool | undefined;
 let ready: Promise<void> | undefined;
@@ -23,6 +26,7 @@ const schema = `
     hold_until timestamptz NOT NULL,
     paid_at timestamptz
   );
+  ALTER TABLE fashion.orders ADD COLUMN IF NOT EXISTS delivery text NOT NULL DEFAULT 'standard';
   CREATE TABLE IF NOT EXISTS fashion.order_items (
     reference text NOT NULL REFERENCES fashion.orders(reference),
     variant_id text NOT NULL REFERENCES fashion.inventory(variant_id),
@@ -67,7 +71,7 @@ export async function database() {
       `INSERT INTO fashion.inventory (variant_id, quantity)
        SELECT * FROM unnest($1::text[], $2::integer[])
        ON CONFLICT (variant_id) DO NOTHING`,
-      [variants.map((variant) => variant.id), variants.map((variant) => variant.quantity)],
+      [inventory.map((variant) => variant.id), inventory.map((variant) => variant.quantity)],
     );
   }).catch((error) => {
     ready = undefined;

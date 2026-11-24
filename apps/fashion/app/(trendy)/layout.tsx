@@ -17,7 +17,7 @@ export default function TrendyLayout({ children }: { children: React.ReactNode }
           Skip to content
         </a>
         <div className="concept-note">
-          Unofficial storefront preview · Prices and availability on request
+          Unofficial storefront preview · Sample prices and stock · Test payments only
         </div>
         <header className="trendy-header">
           <div className="frame header-content">

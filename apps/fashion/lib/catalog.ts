@@ -1,5 +1,9 @@
 export const sizes = ["XS", "S", "M", "L", "XL"] as const;
 export const deliveryFee = 350000;
+export const deliveryOptions = {
+  standard: { label: "Lagos delivery", fee: deliveryFee },
+  pickup: { label: "Store pickup (arrange with the store)", fee: 0 },
+} as const;
 
 export const products = [
   {

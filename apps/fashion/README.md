@@ -15,18 +15,18 @@ Open http://localhost:3000. The preview works with no environment variables, dat
 
 ## Client walkthrough
 
-1. Start on the homepage, browse Clothing, Footwear or Accessories, then use search and the product-type filter to narrow the collection. Filtered collections can be shared by URL.
-2. Open Layered Panel Sneakers, switch between the blue and brown photos, and enter a preferred size if you know it. The product page links to complementary pieces.
-3. Add the selection to the bag, then add a bag or hat from Accessories. Open the WhatsApp draft and check the selected colours, any preferred sizes, and the direct product links.
-4. Without a configured sales number, the message stays in a copyable preview.
+1. Open Black Script Tee or Layered Panel Sneakers, select a colour and size, and add it to your bag. These two products have sample prices, sizes and inventory. The rest of the collection uses WhatsApp enquiries.
+2. From the bag, choose **Proceed to checkout**. Enter guest contact details and choose Lagos delivery or pickup. The summary updates before payment.
+3. With test checkout configured, pay through Paystack. The receipt shows the order number and verified payment state. Paid orders appear at `/owner`, where the owner can update fulfilment and manually send a prefilled WhatsApp confirmation.
+4. **Negotiate price** opens a WhatsApp draft with the bag items, variants and listed subtotal. Negotiated payments are handled manually outside checkout in this MVP. With no sales number configured, the draft is available to copy.
+
+For integrated testing, copy `.env.example` to `.env.local` in `apps/fashion` and set `DATABASE_URL`, `PAYSTACK_SECRET_KEY` (test key), `APP_URL` and `OWNER_PASSWORD`. The app creates its schema and seeds initial test inventory. To test webhook settlement, point the Paystack test webhook at `/api/paystack/webhook` on a public HTTPS deployment.
 
 ## Catalogue and brand
 
-The storefront uses 70 photo crops sourced from all 20 supplied Instagram screenshots. Catalogue names and colour labels describe what is visible in the posts. Espresso `#2C2018`, warm ivory `#F7F2E9`, and amber `#EAB568` pick up the wood interiors and warm tones in the photography.
+The storefront uses 70 photo crops sourced from all 20 supplied Instagram screenshots. Espresso `#2C2018`, warm ivory `#F7F2E9`, and amber `#EAB568` take their cues from the wood interiors and product photography. The catalogue and demo inventory are defined in `lib/trendy-catalogue.ts` and `lib/trendy.ts`.
 
-Before enabling customer enquiries, confirm the official logo and Instagram URL, approved product names and media, prices and negotiability, available variants and stock, delivery and returns terms, and the business WhatsApp number. The preview presents prices and availability on request. A preferred size in a WhatsApp draft is a request to the store.
-
-Source data is in `lib/trendy-catalogue.ts`. The product model supports confirmed fixed or negotiable prices and variant-level stock when the owner supplies them.
+Confirm product names, prices, sizes, stock, delivery and pickup terms, and the business WhatsApp number before launch.
 
 ## Vercel
 
