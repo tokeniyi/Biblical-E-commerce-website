@@ -8,16 +8,24 @@ export function Catalogue() {
   const params = useSearchParams();
   const query = params.get("q") ?? "";
   const category = params.get("category") ?? "";
-  const inStock = params.get("stock") === "1";
+  const type = params.get("type") ?? "";
+  const types = Array.from(
+    new Set(
+      edit
+        .filter((product) => !category || product.category === category)
+        .map((product) => product.kind),
+    ),
+  ).sort();
+  const aliases = {
+    clothing: "apparel clothes",
+    footwear: "shoes sneakers trainers",
+    accessories: "accessory",
+  };
   const terms = query.trim().toLowerCase().split(/\s+/);
   const results = edit.filter((product) => {
-    const aliases = {
-      clothing: "apparel clothes",
-      footwear: "shoes sneakers trainers",
-      accessories: "accessory",
-    };
     const keywords = [
       product.name,
+      product.kind,
       categoryName(product.category),
       product.description,
       aliases[product.category],
@@ -28,13 +36,14 @@ export function Catalogue() {
       .toLowerCase();
     return (
       (!category || product.category === category) &&
-      terms.every((term) => keywords.includes(term)) &&
-      (!inStock || product.colours.some((colour) => colour.stock.some((quantity) => quantity > 0)))
+      (!type || product.kind.toLowerCase() === type) &&
+      terms.every((term) => keywords.includes(term))
     );
   });
 
   function update(name: string, value: string) {
     const next = new URLSearchParams(window.location.search);
+    if (name === "category") next.delete("type");
     if (value) next.set(name, value);
     else next.delete(name);
     const search = next.toString();
@@ -65,13 +74,16 @@ export function Catalogue() {
             placeholder="Search jerseys, sneakers, accessories…"
           />
         </label>
-        <label className="stock-filter">
-          <input
-            type="checkbox"
-            checked={inStock}
-            onChange={(event) => update("stock", event.target.checked ? "1" : "")}
-          />
-          In stock only
+        <label className="type-filter">
+          <span className="sr-only">Product type</span>
+          <select value={type} onChange={(event) => update("type", event.target.value)}>
+            <option value="">All product types</option>
+            {types.map((kind) => (
+              <option key={kind} value={kind.toLowerCase()}>
+                {kind}
+              </option>
+            ))}
+          </select>
         </label>
       </div>
       <p className="result-count" role="status">

@@ -39,7 +39,14 @@ function subscribe(update: () => void) {
 function resolve(entry: BagEntry) {
   const product = edit.find((item) => item.slug === entry.slug);
   const colour = product?.colours.find((item) => item.name === entry.colour);
-  if (!product || !colour || !Number.isSafeInteger(entry.quantity)) return [];
+  if (
+    !product ||
+    !colour ||
+    typeof entry.size !== "string" ||
+    !Number.isSafeInteger(entry.quantity)
+  ) {
+    return [];
+  }
   const limit = variantLimit(product, colour, entry.size);
   if (entry.quantity < 1 || entry.quantity > limit) return [];
   return [{ entry, product, colour, limit }];
@@ -94,7 +101,8 @@ function contactButton(product: Product) {
 
 function lineDescription(product: Product, { colour, size, quantity }: BagEntry) {
   const price = product.terms === "enquiry" ? "price on request" : money(product.price);
-  return `${quantity} × ${product.name} · ${colour} / ${size} · ${price}`;
+  const variant = size ? `${colour} / ${size}` : colour;
+  return `${quantity} × ${product.name} · ${variant} · ${price}`;
 }
 
 function WhatsAppButton({
@@ -175,17 +183,24 @@ export function ProductOrder({ product, number }: { product: Product; number?: s
     product.sizes.length === 1 ? product.sizes[0] : undefined,
   );
   const [notice, setNotice] = useState("");
-  const selected = size
-    ? { slug: product.slug, colour: colour.name, size, quantity: 1 }
-    : undefined;
-  const limit = size ? variantLimit(product, colour, size) : 0;
+  const sizeOnRequest = product.sizes.length === 0;
+  const chosenSize = sizeOnRequest ? (size ?? "").trim() : size;
+  const selected =
+    chosenSize === undefined
+      ? undefined
+      : { slug: product.slug, colour: colour.name, size: chosenSize, quantity: 1 };
+  const limit = selected ? variantLimit(product, colour, selected.size) : 0;
 
   function add() {
     if (!selected || !limit) return;
     const current =
       lines(readBag()).find(({ entry }) => sameVariant(entry, selected))?.entry.quantity ?? 0;
     if (current >= limit) {
-      setNotice("Your bag already has the available quantity.");
+      setNotice(
+        product.terms === "enquiry"
+          ? "This selection is already in your bag."
+          : "Your bag already has the available quantity.",
+      );
       return;
     }
     writeQuantity({ ...selected, quantity: current + 1 });
@@ -206,8 +221,8 @@ export function ProductOrder({ product, number }: { product: Product; number?: s
         <Image
           src={imagePath(colour.photo)}
           alt={`${product.name} in ${colour.name}`}
-          width={820}
-          height={780}
+          width={228}
+          height={282}
           preload
           unoptimized
         />
@@ -239,30 +254,47 @@ export function ProductOrder({ product, number }: { product: Product; number?: s
             ))}
           </div>
         </fieldset>
-        <fieldset>
-          <legend>Size</legend>
-          <div className="variant-row">
-            {product.sizes.map((option) => {
-              const available = variantLimit(product, colour, option) > 0;
-              return (
-                <button
-                  key={option}
-                  type="button"
-                  className="size-option"
-                  aria-pressed={size === option}
-                  disabled={!available}
-                  aria-label={available ? option : `${option} — sold out`}
-                  onClick={() => {
-                    setSize(option);
-                    setNotice("");
-                  }}
-                >
-                  {option}
-                </button>
-              );
-            })}
-          </div>
-        </fieldset>
+        {sizeOnRequest && product.category !== "accessories" && (
+          <label className="preferred-size">
+            Preferred size <span>(optional)</span>
+            <input
+              type="text"
+              maxLength={32}
+              value={size ?? ""}
+              onChange={(event) => {
+                setSize(event.target.value);
+                setNotice("");
+              }}
+              placeholder={product.category === "footwear" ? "e.g. EU 42" : "e.g. M or W32"}
+            />
+          </label>
+        )}
+        {!sizeOnRequest && (
+          <fieldset>
+            <legend>Size</legend>
+            <div className="variant-row">
+              {product.sizes.map((option) => {
+                const available = variantLimit(product, colour, option) > 0;
+                return (
+                  <button
+                    key={option}
+                    type="button"
+                    className="size-option"
+                    aria-pressed={size === option}
+                    disabled={!available}
+                    aria-label={available ? option : `${option} — sold out`}
+                    onClick={() => {
+                      setSize(option);
+                      setNotice("");
+                    }}
+                  >
+                    {option}
+                  </button>
+                );
+              })}
+            </div>
+          </fieldset>
+        )}
         <p className="variant-stock" role="status">
           {product.terms === "enquiry"
             ? "Confirm availability with the store."
@@ -300,10 +332,12 @@ export function ProductOrder({ product, number }: { product: Product; number?: s
             </Link>
           </p>
         )}
-        <details className="fit-details">
-          <summary>Size &amp; fit</summary>
-          <p>{product.fit}</p>
-        </details>
+        {product.fit && (
+          <details className="fit-details">
+            <summary>Size &amp; fit</summary>
+            <p>{product.fit}</p>
+          </details>
+        )}
       </div>
     </div>
   );
@@ -336,7 +370,8 @@ export function ShoppingBag({ number }: { number?: string }) {
                 {product.name}
               </Link>
               <p>
-                {entry.colour} / {entry.size}
+                {entry.colour}
+                {entry.size && ` / ${entry.size}`}
               </p>
               <div className="tl-quantity">
                 <button

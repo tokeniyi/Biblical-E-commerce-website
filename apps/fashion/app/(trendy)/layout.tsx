@@ -5,7 +5,7 @@ import "./trendy.css";
 
 export const metadata: Metadata = {
   title: { default: "Trendy Luxury — Streetwear Edit", template: "%s | Trendy Luxury" },
-  description: "An unofficial Trendy Luxury concept featuring jerseys, sneakers and accessories.",
+  description: "Explore clothing, footwear and accessories featured on Trendy Luxury’s Instagram.",
   robots: { index: false, follow: false },
 };
 
@@ -16,7 +16,9 @@ export default function TrendyLayout({ children }: { children: React.ReactNode }
         <a className="skip-link" href="#main">
           Skip to content
         </a>
-        <div className="concept-note">Unofficial concept · Sample products and prices</div>
+        <div className="concept-note">
+          Unofficial storefront preview · Prices and availability on request
+        </div>
         <header className="trendy-header">
           <div className="frame header-content">
             <Link href="/" className="wordmark" aria-label="Trendy Luxury home">
