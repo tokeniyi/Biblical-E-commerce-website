@@ -95,7 +95,7 @@ export default async function OrderPage({
           </Link>
         </div>
       ) : (
-        <Link className="button" href="/#collection">
+        <Link className="button" href="/studio/#collection">
           Back to collection
         </Link>
       )}

@@ -4,7 +4,7 @@ export default function NotFound() {
   return (
     <section className="shell inner">
       <h1>Page unavailable</h1>
-      <Link className="button" href="/#collection">
+      <Link className="button" href="/studio/#collection">
         Shop the collection
       </Link>
     </section>

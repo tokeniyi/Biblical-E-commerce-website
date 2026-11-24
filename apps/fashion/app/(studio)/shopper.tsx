@@ -42,7 +42,7 @@ export function ProductPurchase({ product, stock }: { product: Product; stock: V
         />
       </div>
       <section className="product-info">
-        <Link className="back-link" href="/#collection">
+        <Link className="back-link" href="/studio/#collection">
           ← Back to collection
         </Link>
         <h1>{product.name}</h1>
@@ -251,7 +251,7 @@ function EmptyBag() {
   return (
     <div className="empty">
       <p>Your bag is empty.</p>
-      <Link className="button" href="/#collection">
+      <Link className="button" href="/studio/#collection">
         Shop the collection
       </Link>
     </div>

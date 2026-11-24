@@ -23,9 +23,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <header className="site-header">
           <div className="shell header-inner">
             <nav aria-label="Store">
-              <Link href="/#collection">Shop</Link>
+              <Link href="/studio/#collection">Shop</Link>
             </nav>
-            <Link className="brand" href="/">
+            <Link className="brand" href="/studio">
               STUDIO FORM<span aria-hidden>.</span>
             </Link>
             <nav aria-label="Your bag">
@@ -37,7 +37,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <footer className="site-footer">
           <div className="shell footer-inner">
             <div>
-              <Link className="brand" href="/">
+              <Link className="brand" href="/studio">
                 STUDIO FORM<span aria-hidden>.</span>
               </Link>
               <p>Fashion storefront concept by Treasure Okeniyi.</p>
