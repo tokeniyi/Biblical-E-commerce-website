@@ -3,6 +3,7 @@ import { money } from "@/lib/catalog";
 import { orderReference } from "@/lib/input";
 import { orderStatus, settleOrder } from "@/lib/orders";
 import { verifyPayment } from "@/lib/paystack";
+import { ClearTrendyBag } from "../../(trendy)/ordering";
 import { ClearBag } from "../shopper";
 
 export const metadata = {
@@ -21,6 +22,8 @@ export default async function OrderPage({
 }) {
   const params = await searchParams;
   const reference = params.reference ?? params.order;
+  const trendy = typeof reference === "string" && reference.startsWith("tl-");
+  const bagPath = trendy ? "/shopping-bag" : "/bag";
   if (
     typeof reference !== "string" ||
     !orderReference.test(reference) ||
@@ -29,7 +32,7 @@ export default async function OrderPage({
     return (
       <div className="shell inner">
         <h1>Order unavailable</h1>
-        <Link className="button" href="/bag">
+        <Link className="button" href={bagPath}>
           Return to bag
         </Link>
       </div>
@@ -41,7 +44,7 @@ export default async function OrderPage({
     return (
       <div className="shell inner">
         <h1>Order unavailable</h1>
-        <Link className="button" href="/bag">
+        <Link className="button" href={bagPath}>
           Return to bag
         </Link>
       </div>
@@ -56,7 +59,8 @@ export default async function OrderPage({
 
   return (
     <section className="shell inner receipt">
-      {payment !== "pending" && <ClearBag reference={reference} />}
+      {payment !== "pending" &&
+        (trendy ? <ClearTrendyBag reference={reference} /> : <ClearBag reference={reference} />)}
       <h1>
         {payment === "paid"
           ? "Payment confirmed"
@@ -80,7 +84,7 @@ export default async function OrderPage({
         </p>
       )}
       <dl className="receipt-details">
-        <dt>Reference</dt>
+        <dt>Order number</dt>
         <dd>{reference}</dd>
         <dt>Total</dt>
         <dd>{money(order.amount)}</dd>
@@ -90,12 +94,12 @@ export default async function OrderPage({
           <a className="button" href={`/order?reference=${reference}`}>
             Check payment status
           </a>
-          <Link href="/bag" className="back-link">
+          <Link href={bagPath} className="back-link">
             Return to bag
           </Link>
         </div>
       ) : (
-        <Link className="button" href="/studio/#collection">
+        <Link className="button" href={trendy ? "/collection" : "/studio/#collection"}>
           Back to collection
         </Link>
       )}

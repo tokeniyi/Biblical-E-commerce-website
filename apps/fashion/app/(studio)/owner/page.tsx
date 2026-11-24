@@ -1,4 +1,4 @@
-import { fulfilmentSteps, money } from "@/lib/catalog";
+import { deliveryOptions, fulfilmentSteps, money } from "@/lib/catalog";
 import { ownerOrders } from "@/lib/orders";
 import { isOwner, ownerEnabled } from "@/lib/owner";
 import { logIn, logOut, updateOrder } from "./actions";
@@ -70,6 +70,15 @@ export default async function OwnerPage({
       <div className="orders">
         {orders.map((order) => {
           const next = fulfilmentSteps[fulfilmentSteps.indexOf(order.fulfilment) + 1];
+          const rawPhone = order.phone.replace(/[^+0-9]/g, "");
+          const whatsapp = rawPhone.startsWith("+")
+            ? rawPhone.slice(1)
+            : rawPhone.replace(/^0(?=\d{10}$)/, "234");
+          const canConfirm =
+            order.reference.startsWith("tl-") &&
+            order.payment === "paid" &&
+            /^[1-9][0-9]{9,14}$/.test(whatsapp);
+          const confirmation = `Hi ${order.name}, Trendy Luxury has confirmed your test payment for order ${order.reference} (${money(order.amount)}).`;
           return (
             <article className="order-card" key={order.reference}>
               <div className="owner-header">
@@ -94,6 +103,8 @@ export default async function OwnerPage({
               <details>
                 <summary>Delivery details</summary>
                 <p>
+                  {deliveryOptions[order.delivery].label}
+                  <br />
                   {order.address}
                   <br />
                   {order.phone}
@@ -106,6 +117,16 @@ export default async function OwnerPage({
                   Payment verified. Stock was unavailable after the hold expired. Review the
                   transaction in the Paystack dashboard.
                 </p>
+              )}
+              {canConfirm && (
+                <a
+                  className="button secondary"
+                  href={`https://wa.me/${whatsapp}?text=${encodeURIComponent(confirmation)}`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Send WhatsApp confirmation
+                </a>
               )}
               {order.payment === "paid" && next && (
                 <form action={updateOrder}>

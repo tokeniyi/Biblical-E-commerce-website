@@ -1,7 +1,8 @@
 import { randomBytes } from "node:crypto";
 import type { PoolClient } from "pg";
 import { database, transaction } from "./db";
-import { deliveryFee, fulfilmentSteps, variants, type Fulfilment } from "./catalog";
+import { deliveryOptions, fulfilmentSteps, variants, type Fulfilment } from "./catalog";
+import { trendyVariants } from "./trendy";
 import { StoreError, type CheckoutInput } from "./input";
 
 const stockQuery = `
@@ -24,26 +25,31 @@ export async function productStock(slug: string) {
   const stock = variants.filter((variant) => variant.slug === slug);
   if (!process.env.DATABASE_URL) return stock;
 
-  const db = await database();
-  const { rows } = await db.query<{ variant_id: string; available: number }>(
-    `${stockQuery} WHERE inventory.variant_id = ANY($1) GROUP BY inventory.variant_id`,
-    [stock.map((variant) => variant.id)],
-  );
-  const availability = new Map(rows.map((row) => [row.variant_id, row.available]));
+  const availability = await availableStock(stock.map((variant) => variant.id));
   return stock.map((variant) => ({ ...variant, quantity: availability.get(variant.id) ?? 0 }));
 }
 
+export async function availableStock(ids: string[]) {
+  const db = await database();
+  const { rows } = await db.query<{ variant_id: string; available: number }>(
+    `${stockQuery} WHERE inventory.variant_id = ANY($1) GROUP BY inventory.variant_id`,
+    [ids],
+  );
+  return new Map(rows.map((row) => [row.variant_id, row.available]));
+}
+
 export async function reserveOrder(input: CheckoutInput) {
+  const catalogue = input.storefront === "trendy" ? trendyVariants : variants;
   const lines = input.items.map((item) => {
-    const variant = variants.find((entry) => entry.id === item.id);
+    const variant = catalogue.find((entry) => entry.id === item.id);
     if (!variant) throw new StoreError("A style in your bag is no longer available.");
     return { ...item, variant };
   });
-  const amount = lines.reduce(
+  const amount = lines.reduce<number>(
     (total, item) => total + item.quantity * item.variant.price,
-    deliveryFee,
+    deliveryOptions[input.delivery].fee,
   );
-  const reference = `sf-${randomBytes(16).toString("hex")}`;
+  const reference = `${input.storefront === "trendy" ? "tl" : "sf"}-${randomBytes(16).toString("hex")}`;
 
   await transaction(async (client) => {
     const ids = lines.map((item) => item.id);
@@ -63,9 +69,17 @@ export async function reserveOrder(input: CheckoutInput) {
       }
     }
     await client.query(
-      `INSERT INTO fashion.orders (reference, name, email, phone, address, amount, hold_until)
-       VALUES ($1, $2, $3, $4, $5, $6, statement_timestamp() + interval '15 minutes')`,
-      [reference, input.name, input.email, input.phone, input.address, amount],
+      `INSERT INTO fashion.orders (reference, name, email, phone, address, amount, delivery, hold_until)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, statement_timestamp() + interval '15 minutes')`,
+      [
+        reference,
+        input.name,
+        input.email,
+        input.phone,
+        input.delivery === "pickup" ? "" : input.address,
+        amount,
+        input.delivery,
+      ],
     );
     for (const item of lines) {
       const { name, colour, size, price } = item.variant;
@@ -155,6 +169,7 @@ type OwnerOrder = {
   phone: string;
   address: string;
   amount: number;
+  delivery: keyof typeof deliveryOptions;
   paid_at: Date;
   payment: "paid" | "stock_review";
   fulfilment: Fulfilment;

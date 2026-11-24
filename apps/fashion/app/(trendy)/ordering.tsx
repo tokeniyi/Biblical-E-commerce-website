@@ -2,13 +2,14 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useRef, useState, useSyncExternalStore } from "react";
-import { money } from "@/lib/catalog";
+import { useEffect, useRef, useState, useSyncExternalStore, type FormEvent } from "react";
+import { deliveryOptions, money } from "@/lib/catalog";
 import {
   categoryName,
   edit,
   imagePath,
   productPath,
+  trendyVariantId,
   variantLimit,
   type Product,
 } from "@/lib/trendy";
@@ -93,14 +94,8 @@ export function BagLink() {
   );
 }
 
-function contactButton(product: Product) {
-  if (product.terms === "enquiry") return "Enquire on WhatsApp";
-  if (product.terms === "negotiable") return "Discuss price on WhatsApp";
-  return "Order on WhatsApp";
-}
-
 function lineDescription(product: Product, { colour, size, quantity }: BagEntry) {
-  const price = product.terms === "enquiry" ? "price on request" : money(product.price);
+  const price = product.terms === "enquiry" ? "price on request" : money(product.price * quantity);
   const variant = size ? `${colour} / ${size}` : colour;
   return `${quantity} × ${product.name} · ${variant} · ${price}`;
 }
@@ -110,11 +105,13 @@ function WhatsAppButton({
   number,
   message,
   disabled,
+  secondary,
 }: {
   label: string;
   number?: string;
   message: (origin: string) => string;
   disabled?: boolean;
+  secondary?: boolean;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const [draft, setDraft] = useState("");
@@ -137,7 +134,12 @@ function WhatsAppButton({
 
   return (
     <>
-      <button className="tl-button contact-button" type="button" disabled={disabled} onClick={open}>
+      <button
+        className={secondary ? "text-link" : "tl-button contact-button"}
+        type="button"
+        disabled={disabled}
+        onClick={open}
+      >
         {label}
       </button>
       <dialog ref={dialog} className="whatsapp-dialog" aria-label="WhatsApp message preview">
@@ -214,7 +216,7 @@ export function ProductOrder({ product, number }: { product: Product; number?: s
         <h1>{product.name}</h1>
         <p className="detail-price">
           {product.terms === "enquiry" ? "Price on request" : money(product.price)}
-          {product.terms === "negotiable" && <small>Asking price · Negotiable</small>}
+          {product.terms === "negotiable" && <small>Sample price · Negotiable</small>}
         </p>
       </div>
       <div className="detail-photo">
@@ -305,24 +307,23 @@ export function ProductOrder({ product, number }: { product: Product; number?: s
               : "Select a size to check availability."}
         </p>
         <div className="purchase-actions">
-          <button className="tl-button" type="button" disabled={!limit} onClick={add}>
-            Add to bag
-          </button>
-          <WhatsAppButton
-            label={contactButton(product)}
-            number={number}
-            disabled={!limit}
-            message={(origin) => {
-              if (!selected) return "";
-              const request =
-                product.terms === "fixed"
-                  ? "I'd like to order"
-                  : product.terms === "negotiable"
-                    ? "I'd like to discuss the price for"
-                    : "Could you confirm the price and availability for";
-              return `Hi Trendy Luxury! ${request} this item:\n\n${lineDescription(product, selected)}\n${origin}${productPath(product.slug)}`;
-            }}
-          />
+          {product.price > 0 && (
+            <button className="tl-button" type="button" disabled={!limit} onClick={add}>
+              Add to bag
+            </button>
+          )}
+          {product.price === 0 && (
+            <WhatsAppButton
+              label="Enquire on WhatsApp"
+              number={number}
+              disabled={!limit}
+              message={(origin) =>
+                selected
+                  ? `Hi Trendy Luxury! Could you confirm the price and availability?\n\n${lineDescription(product, selected)}\n${origin}${productPath(product.slug)}`
+                  : ""
+              }
+            />
+          )}
         </div>
         {notice && (
           <p role="status" className="add-feedback">
@@ -356,7 +357,7 @@ export function ShoppingBag({ number }: { number?: string }) {
     );
   }
   const subtotal = bag.reduce((sum, { product, entry }) => sum + product.price * entry.quantity, 0);
-  const needsQuote = bag.some(({ product }) => product.terms !== "fixed");
+  const needsQuote = bag.some(({ product }) => product.price === 0);
   return (
     <div className="tl-bag">
       <ul className="tl-bag-items">
@@ -417,19 +418,187 @@ export function ShoppingBag({ number }: { number?: string }) {
             <dd>{subtotal > 0 ? money(subtotal) : "On request"}</dd>
           </div>
         </dl>
-        <p>
-          {needsQuote
-            ? "Confirm final prices, availability and delivery on WhatsApp."
-            : "Confirm delivery with the store on WhatsApp."}
-        </p>
-        <WhatsAppButton
-          label="Send bag on WhatsApp"
-          number={number}
-          message={(origin) =>
-            `Hi Trendy Luxury! Could you confirm my order and delivery options?\n\n${bag.map(({ product, entry }) => `${lineDescription(product, entry)}\n${origin}${productPath(product.slug)}`).join("\n\n")}`
-          }
-        />
+        {needsQuote && <p>Items marked “Price on request” are handled on WhatsApp.</p>}
+        {subtotal > 0 && (
+          <Link className="tl-button" href="/guest-checkout">
+            Proceed to checkout
+          </Link>
+        )}
+        {(needsQuote || bag.some(({ product }) => product.terms === "negotiable")) && (
+          <WhatsAppButton
+            label={subtotal > 0 ? "Negotiate price" : "Enquire on WhatsApp"}
+            number={number}
+            secondary={subtotal > 0}
+            message={(origin) =>
+              `Hi Trendy Luxury! Could we discuss the price for these items?\n\n${bag.map(({ product, entry }) => `${lineDescription(product, entry)}\n${origin}${productPath(product.slug)}`).join("\n\n")}${subtotal > 0 ? `\n\nListed subtotal: ${money(subtotal)}` : ""}`
+            }
+          />
+        )}
       </aside>
     </div>
   );
+}
+
+export function GuestCheckout({ enabled }: { enabled: boolean }) {
+  const bag = useLines();
+  const priced = bag.filter(({ product }) => product.price > 0);
+  const [delivery, setDelivery] = useState<keyof typeof deliveryOptions>("standard");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const submitting = useRef(false);
+  const subtotal = priced.reduce(
+    (sum, { product, entry }) => sum + product.price * entry.quantity,
+    0,
+  );
+
+  async function pay(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (submitting.current || !enabled || !priced.length) return;
+    submitting.current = true;
+    setBusy(true);
+    setError("");
+    const form = new FormData(event.currentTarget);
+    const items = priced.map(({ entry }) => ({
+      id: trendyVariantId(entry.slug, entry.colour, entry.size),
+      quantity: entry.quantity,
+    }));
+    const snapshot = readBag();
+    try {
+      const response = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...Object.fromEntries(form),
+          address: form.get("address") ?? "",
+          storefront: "trendy",
+          items,
+        }),
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        setError(result.error ?? "Could not start checkout.");
+        return;
+      }
+      try {
+        sessionStorage.setItem(`trendy-checkout:${result.reference}`, snapshot);
+      } catch {
+        // Payment can proceed without browser storage.
+      }
+      window.location.assign(result.url);
+    } catch {
+      setError("Could not start checkout. Please try again.");
+    } finally {
+      submitting.current = false;
+      setBusy(false);
+    }
+  }
+
+  if (!priced.length)
+    return (
+      <p>
+        No items with a listed price.{" "}
+        <Link className="text-link" href="/shopping-bag">
+          Return to bag
+        </Link>
+      </p>
+    );
+
+  return (
+    <div className="tl-checkout">
+      <form onSubmit={pay}>
+        <label>
+          Full name
+          <input name="name" autoComplete="name" minLength={2} maxLength={100} required />
+        </label>
+        <label>
+          WhatsApp phone number
+          <input name="phone" type="tel" autoComplete="tel" maxLength={22} required />
+        </label>
+        <label>
+          Email
+          <input name="email" type="email" autoComplete="email" maxLength={200} required />
+        </label>
+        <label>
+          Delivery option
+          <select
+            name="delivery"
+            value={delivery}
+            onChange={(event) =>
+              setDelivery(event.target.value === "pickup" ? "pickup" : "standard")
+            }
+          >
+            {Object.entries(deliveryOptions).map(([value, option]) => (
+              <option key={value} value={value}>
+                {option.label} · {option.fee ? money(option.fee) : "Free"}
+              </option>
+            ))}
+          </select>
+        </label>
+        {delivery === "standard" && (
+          <label>
+            Delivery address
+            <textarea
+              name="address"
+              autoComplete="street-address"
+              minLength={5}
+              maxLength={300}
+              required
+            />
+          </label>
+        )}
+        {!enabled && <p>Test payments require a configured database and Paystack test key.</p>}
+        {error && <p role="alert">{error}</p>}
+        <button className="tl-button" disabled={!enabled || busy}>
+          {busy ? "Opening Paystack…" : "Pay with Paystack (test)"}
+        </button>
+      </form>
+      <aside className="tl-summary">
+        <h2>Order summary</h2>
+        <ul>
+          {priced.map(({ product, entry }) => (
+            <li key={trendyVariantId(entry.slug, entry.colour, entry.size)}>
+              {entry.quantity} × {product.name} · {entry.colour} / {entry.size} ·{" "}
+              {money(product.price * entry.quantity)}
+            </li>
+          ))}
+        </ul>
+        {priced.length < bag.length && <p>Items without a listed price stay in your bag.</p>}
+        <dl>
+          <div>
+            <dt>Subtotal</dt>
+            <dd>{money(subtotal)}</dd>
+          </div>
+          <div>
+            <dt>Delivery</dt>
+            <dd>{money(deliveryOptions[delivery].fee)}</dd>
+          </div>
+          <div>
+            <dt>Total</dt>
+            <dd>{money(subtotal + deliveryOptions[delivery].fee)}</dd>
+          </div>
+        </dl>
+        <Link className="text-link" href="/shopping-bag">
+          Return to bag
+        </Link>
+      </aside>
+    </div>
+  );
+}
+
+export function ClearTrendyBag({ reference }: { reference: string }) {
+  useEffect(() => {
+    try {
+      const key = `trendy-checkout:${reference}`;
+      const raw = readBag();
+      if (sessionStorage.getItem(key) === raw) {
+        const remaining = lines(raw).filter(({ product }) => product.price === 0);
+        localStorage.setItem(bagKey, JSON.stringify(remaining.map(({ entry }) => entry)));
+        window.dispatchEvent(new Event(bagEvent));
+      }
+      sessionStorage.removeItem(key);
+    } catch {
+      // The order confirmation remains readable without browser storage.
+    }
+  }, [reference]);
+  return null;
 }
